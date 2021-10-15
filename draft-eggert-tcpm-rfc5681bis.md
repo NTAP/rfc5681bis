@@ -36,8 +36,21 @@ informative:
   MM96b: RFC791 #XXX
   Pax97: DOI.10.1145/263105.263155
   SCWA99: DOI.10.1145/505696.505704
-  Ste94: DOI.10.5555/161724
-  WS95: DOI.10.5555/206746
+  Ste94:
+    author:
+    - name: W. Richard Stevens
+    title: "TCP/IP Illustrated, Volume 1: The Protocols"
+    date: 1994
+    seriesinfo:
+      Addison-Wesley: Professional Computing Series
+  WS95:
+    author:
+    - name: W. Richard Stevens
+    - name: Gary R. Wright
+    title: "TCP/IP Illustrated, Volume 2: The Implementation"
+    date: 1995
+    seriesinfo:
+      Addison-Wesley: Professional Computing Series
 
 --- abstract
 
