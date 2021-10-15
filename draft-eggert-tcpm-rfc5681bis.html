@@ -1,0 +1,2071 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>TCP Congestion Control</title>
+<meta content="Lars Eggert" name="author">
+<meta content="
+       This document defines TCP's four intertwined congestion control
+algorithms: slow start, congestion avoidance, fast retransmit, and
+fast recovery.  In addition, the document specifies how TCP should
+begin transmission after a relatively long idle period, as well as
+discussing various acknowledgment generation methods.  This document
+obsoletes RFC 5681. 
+    " name="description">
+<meta content="xml2rfc 3.10.0" name="generator">
+<meta content="draft-eggert-tcpm-rfc5681bis-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.10.0
+    Python 3.9.5
+    appdirs 1.4.4
+    ConfigArgParse 1.3
+    google-i18n-address 2.5.0
+    html5lib 1.1
+    intervaltree 3.1.0
+    Jinja2 2.11.3
+    kitchen 1.2.6
+    lxml 4.6.3
+    pycountry 20.7.3
+    pyflakes 2.3.0
+    PyYAML 5.4.1
+    requests 2.25.1
+    setuptools 52.0.0
+    six 1.15.0
+-->
+<link href="draft-eggert-tcpm-rfc5681bis.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+html {
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  scrollbar-color: #bbb #eee;
+}
+@media (prefers-color-scheme: dark) {
+html {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Cabin Condensed", sans-serif;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+dd.break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href].selfRef {
+  color: var(--text-color);
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px 'Oxygen Mono', monospace;
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines */
+  line-height: 0;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+}
+@media screen {
+  pre {
+    display: inline-block;
+    overflow-x: auto;
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  pre + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  margin: 1em 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+tr:nth-child(2n) > td {
+  background-color: var(--background-color);
+}
+tr:nth-child(2n+1) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody > tr:nth-child(2n) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody > tr:nth-child(2n+1) > td {
+  background-color: var(--background-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+}
+a.pilcrow[href] { color: var(--pilcrow-weak); }
+a.pilcrow[href]:hover { text-decoration: none; }
+@media not print {
+  :hover > a.pilcrow {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 8em;
+}
+#identifiers dt {
+  width: var(--identifier-width);
+  margin: 0;
+  clear: left;
+  float: left;
+  text-align: right;
+}
+#identifiers dd {
+  margin: 0 0 0 calc(1em + var(--identifier-width));
+  min-width: 5em;
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+#toc nav ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+#toc nav li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+#toc a.xref {
+  white-space: normal;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 500px) {
+  .index ul {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  .index ul ul {
+    column-count: 1;
+    column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc.active {
+      opacity: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 8px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active nav {
+    display: block;
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin-top: 2px;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  #toc nav > ul  {
+    margin-bottom: 2em;
+  }
+  #toc ul {
+    margin: 0 0 0 4px;
+    font-size: var(--small-font-size);
+  }
+  #toc ul p, #toc ul li {
+    margin: 2px 0;
+    line-height: 22px;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Changes introduced to fix issues found during implementation */
+
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin: 8px 0.5em 0;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table .text-left, table .text-left {
+  text-align: left;
+}
+table .text-center, table .text-center {
+  text-align: center;
+}
+table .text-right, table .text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 20em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  dd {
+    page-break-before: avoid;
+  }
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+</style>
+
+</head>
+<body>
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">TCP Congestion Control</td>
+<td class="right">October 2021</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Eggert</td>
+<td class="center">Expires 18 April 2022</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">TCPM</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-eggert-tcpm-rfc5681bis-latest</dd>
+<dt class="label-obsoletes">Obsoletes:</dt>
+<dd class="obsoletes">
+<a href="https://datatracker.ietf.org/doc/html/rfc5681" class="eref">5681</a> (if approved)</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2021-10-15" class="published">15 October 2021</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2022-04-18">18 April 2022</time></dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">L. Eggert, <span class="editor">Ed.</span>
+</div>
+<div class="org">NetApp</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">TCP Congestion Control</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines TCP's four intertwined congestion control
+algorithms: slow start, congestion avoidance, fast retransmit, and
+fast recovery.  In addition, the document specifies how TCP should
+begin transmission after a relatively long idle period, as well as
+discussing various acknowledgment generation methods.  This document
+obsoletes RFC 5681.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 18 April 2022.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2021 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Simplified BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Simplified BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-3">
+            This document may contain material from IETF Documents or IETF
+            Contributions published or made publicly available before November
+            10, 2008. The person(s) controlling the copyright in some of this
+            material may not have granted the IETF Trust the right to allow
+            modifications of such material outside the IETF Standards Process.
+            Without obtaining an adequate license from the person(s)
+            controlling the copyright in such materials, this document may not
+            be modified outside the IETF Standards Process, and derivative
+            works of it may not be created outside the IETF Standards Process,
+            except to format it for publication as an RFC or to translate it
+            into languages other than English.<a href="#section-boilerplate.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="xref">1</a>.  <a href="#name-introduction" class="xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="xref">2</a>.  <a href="#name-definitions" class="xref">Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="xref">3</a>.  <a href="#name-congestion-control-algorith" class="xref">Congestion Control Algorithms</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="xref">3.1</a>.  <a href="#name-slow-start-and-congestion-a" class="xref">Slow Start and Congestion Avoidance</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="xref">3.2</a>.  <a href="#name-fast-retransmit-fast-recove" class="xref">Fast Retransmit/Fast Recovery</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="xref">4</a>.  <a href="#name-additional-considerations" class="xref">Additional Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="xref">4.1</a>.  <a href="#name-restarting-idle-connections" class="xref">Restarting Idle Connections</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="xref">4.2</a>.  <a href="#name-generating-acknowledgments" class="xref">Generating Acknowledgments</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="xref">4.3</a>.  <a href="#name-loss-recovery-mechanisms" class="xref">Loss Recovery Mechanisms</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="xref">5</a>.  <a href="#name-security-considerations" class="xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="xref">6</a>.  <a href="#name-changes-between-rfc-2001-an" class="xref">Changes between RFC 2001 and RFC 2581</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="xref">7</a>.  <a href="#name-changes-relative-to-rfc-258" class="xref">Changes Relative to RFC 2581</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="xref">8</a>.  <a href="#name-changes-relative-to-rfc-568" class="xref">Changes Relative to RFC 5681</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="xref">9</a>.  <a href="#name-acknowledgments" class="xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="xref">10</a>. <a href="#name-references" class="xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="xref">10.1</a>.  <a href="#name-normative-references" class="xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="xref">10.2</a>.  <a href="#name-informative-references" class="xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="xref"></a><a href="#name-authors-address" class="xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="intro">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This document specifies four TCP <span>[<a href="#RFC793" class="xref">RFC793</a>]</span> congestion control
+algorithms: slow start, congestion avoidance, fast retransmit and
+fast recovery.  These algorithms were devised in <span>[<a href="#Jac88" class="xref">Jac88</a>]</span> and <span>[<a href="#Jac90" class="xref">Jac90</a>]</span>.
+Their use with TCP is standardized in <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span>.  Additional early
+work in additive-increase, multiplicative-decrease congestion control
+is given in <span>[<a href="#CJ89" class="xref">CJ89</a>]</span>.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Note that <span>[<a href="#Ste94" class="xref">Ste94</a>]</span> provides examples of these algorithms in action and
+<span>[<a href="#WS95" class="xref">WS95</a>]</span> provides an explanation of the source code for the BSD
+implementation of these algorithms.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">In addition to specifying these congestion control algorithms, this
+document specifies what TCP connections should do after a relatively
+long idle period, as well as specifying and clarifying some of the
+issues pertaining to TCP ACK generation.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">This document obsoletes <span>[<a href="#RFC5681" class="xref">RFC5681</a>]</span>, which in turn obsoleted
+<span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span>, which in turn obsoleted <span>[<a href="#RFC2001" class="xref">RFC2001</a>]</span>.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This document is organized as follows.  <a href="#definitions" class="xref">Section 2</a> provides various
+definitions that will be used throughout the document.  <a href="#algorithms" class="xref">Section 3</a>
+provides a specification of the congestion control algorithms.
+<a href="#considerations" class="xref">Section 4</a> outlines concerns related to the congestion control
+algorithms and finally, <a href="#security" class="xref">Section 5</a> outlines security considerations.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
+"MAY", and "OPTIONAL" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="definitions">
+<section id="section-2">
+      <h2 id="name-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-definitions" class="section-name selfRef">Definitions</a>
+      </h2>
+<p id="section-2-1">This section provides the definition of several terms that will be
+used throughout the remainder of this document.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-2">
+        <dt id="section-2-2.1">
+SEGMENT:  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">
+          <p id="section-2-2.2.1">A segment is ANY TCP/IP data or acknowledgment packet (or
+both).<a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">
+SENDER MAXIMUM SEGMENT SIZE (SMSS):  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">
+          <p id="section-2-2.4.1">The SMSS is the size of the
+largest segment that the sender can transmit.  This value can be
+based on the maximum transmission unit of the network, the path
+MTU discovery <span>[<a href="#RFC1191" class="xref">RFC1191</a>]</span><span>[<a href="#RFC4821" class="xref">RFC4821</a>]</span> algorithm, RMSS (see next item),
+or other factors.  The size does not include the TCP/IP headers
+and options.<a href="#section-2-2.4.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">
+RECEIVER MAXIMUM SEGMENT SIZE (RMSS):  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">
+          <p id="section-2-2.6.1">The RMSS is the size of the
+largest segment the receiver is willing to accept.  This is the
+value specified in the MSS option sent by the receiver during
+connection startup.  Or, if the MSS option is not used, it is 536
+bytes <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span>.  The size does not include the TCP/IP headers and
+options.<a href="#section-2-2.6.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">
+FULL-SIZED SEGMENT:  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">
+          <p id="section-2-2.8.1">A segment that contains the maximum number of
+data bytes permitted (i.e., a segment containing SMSS bytes of
+data).<a href="#section-2-2.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.9">
+RECEIVER WINDOW (rwnd):  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.10">
+          <p id="section-2-2.10.1">The most recently advertised receiver window.<a href="#section-2-2.10.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.11">
+CONGESTION WINDOW (cwnd):  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.12">
+          <p id="section-2-2.12.1">A TCP state variable that limits the amount
+of data a TCP can send.  At any given time, a TCP MUST NOT send
+data with a sequence number higher than the sum of the highest
+acknowledged sequence number and the minimum of cwnd and rwnd.<a href="#section-2-2.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.13">
+INITIAL WINDOW (IW):  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.14">
+          <p id="section-2-2.14.1">The initial window is the size of the sender's
+congestion window after the three-way handshake is completed.<a href="#section-2-2.14.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.15">
+LOSS WINDOW (LW):  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.16">
+          <p id="section-2-2.16.1">The loss window is the size of the congestion
+window after a TCP sender detects loss using its retransmission
+timer.<a href="#section-2-2.16.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.17">
+RESTART WINDOW (RW):  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.18">
+          <p id="section-2-2.18.1">The restart window is the size of the congestion
+window after a TCP restarts transmission after an idle period (if
+the slow start algorithm is used; see <a href="#idle-conn-conns" class="xref">Section 4.1</a> for more
+discussion).<a href="#section-2-2.18.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.19">
+FLIGHT SIZE:  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.20">
+          <p id="section-2-2.20.1">The amount of data that has been sent but not yet
+cumulatively acknowledged.<a href="#section-2-2.20.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.21">
+DUPLICATE ACKNOWLEDGMENT:  </dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.22">
+          <p id="section-2-2.22.1">An acknowledgment is considered a
+"duplicate" in the following algorithms when (a) the receiver of
+the ACK has outstanding data, (b) the incoming acknowledgment
+carries no data, (c) the SYN and FIN bits are both off, (d) the
+acknowledgment number is equal to the greatest acknowledgment
+received on the given connection (TCP.UNA from <span>[<a href="#RFC793" class="xref">RFC793</a>]</span>) and (e)
+the advertised window in the incoming acknowledgment equals the
+advertised window in the last incoming acknowledgment.<a href="#section-2-2.22.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.23"></dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.24">
+          <p id="section-2-2.24.1">Alternatively, a TCP that utilizes selective acknowledgments
+(SACKs) <span>[<a href="#RFC2018" class="xref">RFC2018</a>]</span><span>[<a href="#RFC2883" class="xref">RFC2883</a>]</span> can leverage the SACK information to
+determine when an incoming ACK is a "duplicate" (e.g., if the ACK
+contains previously unknown SACK information).<a href="#section-2-2.24.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="algorithms">
+<section id="section-3">
+      <h2 id="name-congestion-control-algorith">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-congestion-control-algorith" class="section-name selfRef">Congestion Control Algorithms</a>
+      </h2>
+<p id="section-3-1">This section defines the four congestion control algorithms: slow
+start, congestion avoidance, fast retransmit, and fast recovery,
+developed in <span>[<a href="#Jac88" class="xref">Jac88</a>]</span> and <span>[<a href="#Jac90" class="xref">Jac90</a>]</span>.  In some situations, it may be
+beneficial for a TCP sender to be more conservative than the
+algorithms allow; however, a TCP MUST NOT be more aggressive than the
+following algorithms allow (that is, MUST NOT send data when the
+value of cwnd computed by the following algorithms would not allow
+the data to be sent).<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">Also, note that the algorithms specified in this document work in
+terms of using loss as the signal of congestion.  Explicit Congestion
+Notification (ECN) could also be used as specified in <span>[<a href="#RFC3168" class="xref">RFC3168</a>]</span>.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<div id="ss-and-cong-avoidance">
+<section id="section-3.1">
+        <h3 id="name-slow-start-and-congestion-a">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-slow-start-and-congestion-a" class="section-name selfRef">Slow Start and Congestion Avoidance</a>
+        </h3>
+<p id="section-3.1-1">The slow start and congestion avoidance algorithms MUST be used by a
+TCP sender to control the amount of outstanding data being injected
+into the network.  To implement these algorithms, two variables are
+added to the TCP per-connection state.  The congestion window (cwnd)
+is a sender-side limit on the amount of data the sender can transmit
+into the network before receiving an acknowledgment (ACK), while the
+receiver's advertised window (rwnd) is a receiver-side limit on the
+amount of outstanding data.  The minimum of cwnd and rwnd governs
+data transmission.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">Another state variable, the slow start threshold (ssthresh), is used
+to determine whether the slow start or congestion avoidance algorithm
+is used to control data transmission, as discussed below.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">Beginning transmission into a network with unknown conditions
+requires TCP to slowly probe the network to determine the available
+capacity, in order to avoid congesting the network with an
+inappropriately large burst of data.  The slow start algorithm is
+used for this purpose at the beginning of a transfer, or after
+repairing loss detected by the retransmission timer.  Slow start
+additionally serves to start the "ACK clock" used by the TCP sender
+to release data into the network in the slow start, congestion
+avoidance, and loss recovery algorithms.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">IW, the initial value of cwnd, MUST be set using the following
+guidelines as an upper bound.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.1-5">
+<pre>
+If SMSS &gt; 2190 bytes:
+    IW = 2 * SMSS bytes and MUST NOT be more than 2 segments
+If (SMSS &gt; 1095 bytes) and (SMSS &lt;= 2190 bytes):
+    IW = 3 * SMSS bytes and MUST NOT be more than 3 segments
+if SMSS &lt;= 1095 bytes:
+    IW = 4 * SMSS bytes and MUST NOT be more than 4 segments
+</pre><a href="#section-3.1-5" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1-6">As specified in <span>[<a href="#RFC3390" class="xref">RFC3390</a>]</span>, the SYN/ACK and the acknowledgment of the
+SYN/ACK MUST NOT increase the size of the congestion window.
+Further, if the SYN or SYN/ACK is lost, the initial window used by a
+sender after a correctly transmitted SYN MUST be one segment
+consisting of at most SMSS bytes.<a href="#section-3.1-6" class="pilcrow">¶</a></p>
+<p id="section-3.1-7">A detailed rationale and discussion of the IW setting is provided in
+<span>[<a href="#RFC3390" class="xref">RFC3390</a>]</span>.<a href="#section-3.1-7" class="pilcrow">¶</a></p>
+<p id="section-3.1-8">When initial congestion windows of more than one segment are
+implemented along with Path MTU Discovery <span>[<a href="#RFC1191" class="xref">RFC1191</a>]</span>, and the MSS
+being used is found to be too large, the congestion window cwnd
+SHOULD be reduced to prevent large bursts of smaller segments.
+Specifically, cwnd SHOULD be reduced by the ratio of the old segment
+size to the new segment size.<a href="#section-3.1-8" class="pilcrow">¶</a></p>
+<p id="section-3.1-9">The initial value of ssthresh SHOULD be set arbitrarily high (e.g.,
+to the size of the largest possible advertised window), but ssthresh
+MUST be reduced in response to congestion.  Setting ssthresh as high
+as possible allows the network conditions, rather than some arbitrary
+host limit, to dictate the sending rate.  In cases where the end
+systems have a solid understanding of the network path, more
+carefully setting the initial ssthresh value may have merit (e.g.,
+such that the end host does not create congestion along the path).<a href="#section-3.1-9" class="pilcrow">¶</a></p>
+<p id="section-3.1-10">The slow start algorithm is used when cwnd &lt; ssthresh, while the
+congestion avoidance algorithm is used when cwnd &gt; ssthresh.  When
+cwnd and ssthresh are equal, the sender may use either slow start or
+congestion avoidance.<a href="#section-3.1-10" class="pilcrow">¶</a></p>
+<p id="section-3.1-11">During slow start, a TCP increments cwnd by at most SMSS bytes for
+each ACK received that cumulatively acknowledges new data.  Slow
+start ends when cwnd exceeds ssthresh (or, optionally, when it
+reaches it, as noted above) or when congestion is observed.  While
+traditionally TCP implementations have increased cwnd by precisely
+SMSS bytes upon receipt of an ACK covering new data, we RECOMMEND
+that TCP implementations increase cwnd, per:<a href="#section-3.1-11" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.1-12">
+<pre>
+   cwnd += min (N, SMSS)                      (2)
+</pre><a href="#section-3.1-12" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1-13">where N is the number of previously unacknowledged bytes acknowledged
+in the incoming ACK.  This adjustment is part of Appropriate Byte
+Counting <span>[<a href="#RFC3465" class="xref">RFC3465</a>]</span> and provides robustness against misbehaving
+receivers that may attempt to induce a sender to artificially inflate
+cwnd using a mechanism known as "ACK Division" <span>[<a href="#SCWA99" class="xref">SCWA99</a>]</span>.  ACK
+Division consists of a receiver sending multiple ACKs for a single
+TCP data segment, each acknowledging only a portion of its data.  A
+TCP that increments cwnd by SMSS for each such ACK will
+inappropriately inflate the amount of data injected into the network.<a href="#section-3.1-13" class="pilcrow">¶</a></p>
+<p id="section-3.1-14">During congestion avoidance, cwnd is incremented by roughly 1 full-
+sized segment per round-trip time (RTT).  Congestion avoidance
+continues until congestion is detected.  The basic guidelines for
+incrementing cwnd during congestion avoidance are:<a href="#section-3.1-14" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-15.1">MAY increment cwnd by SMSS bytes<a href="#section-3.1-15.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-15.2">SHOULD increment cwnd per equation (2) once per RTT<a href="#section-3.1-15.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-15.3">MUST NOT increment cwnd by more than SMSS bytes<a href="#section-3.1-15.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.1-16">We note that <span>[<a href="#RFC3465" class="xref">RFC3465</a>]</span> allows for cwnd increases of more than SMSS
+bytes for incoming acknowledgments during slow start on an
+experimental basis; however, such behavior is not allowed as part of
+the standard.<a href="#section-3.1-16" class="pilcrow">¶</a></p>
+<p id="section-3.1-17">The RECOMMENDED way to increase cwnd during congestion avoidance is
+to count the number of bytes that have been acknowledged by ACKs for
+new data.  (A drawback of this implementation is that it requires
+maintaining an additional state variable.)  When the number of bytes
+acknowledged reaches cwnd, then cwnd can be incremented by up to SMSS
+bytes.  Note that during congestion avoidance, cwnd MUST NOT be
+increased by more than SMSS bytes per RTT.  This method both allows
+TCPs to increase cwnd by one segment per RTT in the face of delayed
+ACKs and provides robustness against ACK Division attacks.<a href="#section-3.1-17" class="pilcrow">¶</a></p>
+<p id="section-3.1-18">Another common formula that a TCP MAY use to update cwnd during
+congestion avoidance is given in equation (3):<a href="#section-3.1-18" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.1-19">
+<pre>
+   cwnd += SMSS*SMSS/cwnd                     (3)
+</pre><a href="#section-3.1-19" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1-20">This adjustment is executed on every incoming ACK that acknowledges
+new data.  Equation (3) provides an acceptable approximation to the
+underlying principle of increasing cwnd by 1 full-sized segment per
+RTT.  (Note that for a connection in which the receiver is
+acknowledging every-other packet, (3) is less aggressive than allowed
+-- roughly increasing cwnd every second RTT.)<a href="#section-3.1-20" class="pilcrow">¶</a></p>
+<p id="section-3.1-21">Implementation Note: Since integer arithmetic is usually used in TCP
+implementations, the formula given in equation (3) can fail to
+increase cwnd when the congestion window is larger than SMSS*SMSS.
+If the above formula yields 0, the result SHOULD be rounded up to 1
+byte.<a href="#section-3.1-21" class="pilcrow">¶</a></p>
+<p id="section-3.1-22">Implementation Note: Older implementations have an additional
+additive constant on the right-hand side of equation (3).  This is
+incorrect and can actually lead to diminished performance <span>[<a href="#RFC2525" class="xref">RFC2525</a>]</span>.<a href="#section-3.1-22" class="pilcrow">¶</a></p>
+<p id="section-3.1-23">Implementation Note: Some implementations maintain cwnd in units of
+bytes, while others in units of full-sized segments.  The latter will
+find equation (3) difficult to use, and may prefer to use the
+counting approach discussed in the previous paragraph.<a href="#section-3.1-23" class="pilcrow">¶</a></p>
+<p id="section-3.1-24">When a TCP sender detects segment loss using the retransmission timer
+and the given segment has not yet been resent by way of the
+retransmission timer, the value of ssthresh MUST be set to no more
+than the value given in equation (4):<a href="#section-3.1-24" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3.1-25">
+<pre>
+   ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
+</pre><a href="#section-3.1-25" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1-26">where, as discussed above, FlightSize is the amount of outstanding
+data in the network.<a href="#section-3.1-26" class="pilcrow">¶</a></p>
+<p id="section-3.1-27">On the other hand, when a TCP sender detects segment loss using the
+retransmission timer and the given segment has already been
+retransmitted by way of the retransmission timer at least once, the
+value of ssthresh is held constant.<a href="#section-3.1-27" class="pilcrow">¶</a></p>
+<p id="section-3.1-28">Implementation Note: An easy mistake to make is to simply use cwnd,
+rather than FlightSize, which in some implementations may
+incidentally increase well beyond rwnd.<a href="#section-3.1-28" class="pilcrow">¶</a></p>
+<p id="section-3.1-29">Furthermore, upon a timeout (as specified in <span>[<a href="#RFC2988" class="xref">RFC2988</a>]</span>) cwnd MUST be
+set to no more than the loss window, LW, which equals 1 full-sized
+segment (regardless of the value of IW).  Therefore, after
+retransmitting the dropped segment the TCP sender uses the slow start
+algorithm to increase the window from 1 full-sized segment to the new
+value of ssthresh, at which point congestion avoidance again takes
+over.<a href="#section-3.1-29" class="pilcrow">¶</a></p>
+<p id="section-3.1-30">As shown in <span>[<a href="#FF96" class="xref">FF96</a>]</span> and <span>[<a href="#RFC3782" class="xref">RFC3782</a>]</span>, slow-start-based loss recovery
+after a timeout can cause spurious retransmissions that trigger
+duplicate acknowledgments.  The reaction to the arrival of these
+duplicate ACKs in TCP implementations varies widely.  This document
+does not specify how to treat such acknowledgments, but does note
+this as an area that may benefit from additional attention,
+experimentation and specification.<a href="#section-3.1-30" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="frtx-frec">
+<section id="section-3.2">
+        <h3 id="name-fast-retransmit-fast-recove">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-fast-retransmit-fast-recove" class="section-name selfRef">Fast Retransmit/Fast Recovery</a>
+        </h3>
+<p id="section-3.2-1">A TCP receiver SHOULD send an immediate duplicate ACK when an out-
+of-order segment arrives.  The purpose of this ACK is to inform the
+sender that a segment was received out-of-order and which sequence
+number is expected.  From the sender's perspective, duplicate ACKs
+can be caused by a number of network problems.  First, they can be
+caused by dropped segments.  In this case, all segments after the
+dropped segment will trigger duplicate ACKs until the loss is
+repaired.  Second, duplicate ACKs can be caused by the re-ordering of
+data segments by the network (not a rare event along some network
+paths <span>[<a href="#Pax97" class="xref">Pax97</a>]</span>).  Finally, duplicate ACKs can be caused by replication
+of ACK or data segments by the network.  In addition, a TCP receiver
+SHOULD send an immediate ACK when the incoming segment fills in all
+or part of a gap in the sequence space.  This will generate more
+timely information for a sender recovering from a loss through a
+retransmission timeout, a fast retransmit, or an advanced loss
+recovery algorithm, as outlined in <a href="#loss-rec-mechanisms" class="xref">Section 4.3</a>.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">The TCP sender SHOULD use the "fast retransmit" algorithm to detect
+and repair loss, based on incoming duplicate ACKs.  The fast
+retransmit algorithm uses the arrival of 3 duplicate ACKs (as defined
+in <a href="#definitions" class="xref">Section 2</a>, without any intervening ACKs which move SND.UNA) as an
+indication that a segment has been lost.  After receiving 3 duplicate
+ACKs, TCP performs a retransmission of what appears to be the missing
+segment, without waiting for the retransmission timer to expire.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">After the fast retransmit algorithm sends what appears to be the
+missing segment, the "fast recovery" algorithm governs the
+transmission of new data until a non-duplicate ACK arrives.  The
+reason for not performing slow start is that the receipt of the
+duplicate ACKs not only indicates that a segment has been lost, but
+also that segments are most likely leaving the network (although a
+massive segment duplication by the network can invalidate this
+conclusion).  In other words, since the receiver can only generate a
+duplicate ACK when a segment has arrived, that segment has left the
+network and is in the receiver's buffer, so we know it is no longer
+consuming network resources.  Furthermore, since the ACK "clock"
+<span>[<a href="#Jac88" class="xref">Jac88</a>]</span> is preserved, the TCP sender can continue to transmit new
+segments (although transmission must continue using a reduced cwnd,
+since loss is an indication of congestion).<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4">The fast retransmit and fast recovery algorithms are implemented
+together as follows.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3.2-5">
+<li id="section-3.2-5.1">On the first and second duplicate ACKs received at a sender, a
+TCP SHOULD send a segment of previously unsent data per <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>
+provided that the receiver's advertised window allows, the total
+FlightSize would remain less than or equal to cwnd plus 2*SMSS,
+and that new data is available for transmission.  Further, the
+TCP sender MUST NOT change cwnd to reflect these two segments
+<span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>.  Note that a sender using SACK <span>[<a href="#RFC2018" class="xref">RFC2018</a>]</span> MUST NOT send
+new data unless the incoming duplicate acknowledgment contains
+new SACK information.<a href="#section-3.2-5.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-5.2">When the third duplicate ACK is received, a TCP MUST set ssthresh
+to no more than the value given in equation (4).  When <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>
+is in use, additional data sent in limited transmit MUST NOT be
+included in this calculation.<a href="#section-3.2-5.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-5.3">The lost segment starting at SND.UNA MUST be retransmitted and
+cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
+the congestion window by the number of segments (three) that have
+left the network and which the receiver has buffered.<a href="#section-3.2-5.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-5.4">
+            <p id="section-3.2-5.4.1">For each additional duplicate ACK received (after the third),
+cwnd MUST be incremented by SMSS.  This artificially inflates the
+congestion window in order to reflect the additional segment that
+has left the network.<a href="#section-3.2-5.4.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-5.4.2">
+Note: <span>[<a href="#SCWA99" class="xref">SCWA99</a>]</span> discusses a receiver-based attack whereby many
+bogus duplicate ACKs are sent to the data sender in order to
+artificially inflate cwnd and cause a higher than appropriate
+sending rate to be used.  A TCP MAY therefore limit the number of
+times cwnd is artificially inflated during loss recovery to the
+number of outstanding segments (or, an approximation thereof).<a href="#section-3.2-5.4.2" class="pilcrow">¶</a></p>
+<p id="section-3.2-5.4.3">
+Note: When an advanced loss recovery mechanism (such as outlined
+in <a href="#loss-rec-mechanisms" class="xref">Section 4.3</a>) is not in use, this increase in FlightSize can
+cause equation (4) to slightly inflate cwnd and ssthresh, as some
+of the segments between SND.UNA and SND.NXT are assumed to have
+left the network but are still reflected in FlightSize.<a href="#section-3.2-5.4.3" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.2-5.5">When previously unsent data is available and the new value of
+cwnd and the receiver's advertised window allow, a TCP SHOULD
+send 1*SMSS bytes of previously unsent data.<a href="#section-3.2-5.5" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.2-5.6">
+            <p id="section-3.2-5.6.1">When the next ACK arrives that acknowledges previously
+unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
+set in step 2).  This is termed "deflating" the window.<a href="#section-3.2-5.6.1" class="pilcrow">¶</a></p>
+<p id="section-3.2-5.6.2">
+This ACK should be the acknowledgment elicited by the
+retransmission from step 3, one RTT after the retransmission
+(though it may arrive sooner in the presence of significant out-
+of-order delivery of data segments at the receiver).
+Additionally, this ACK should acknowledge all the intermediate
+segments sent between the lost segment and the receipt of the
+third duplicate ACK, if none of these were lost.<a href="#section-3.2-5.6.2" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-3.2-6">Note: This algorithm is known to generally not recover efficiently
+from multiple losses in a single flight of packets <span>[<a href="#FF96" class="xref">FF96</a>]</span>.
+<a href="#loss-rec-mechanisms" class="xref">Section 4.3</a> below addresses such cases.<a href="#section-3.2-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="considerations">
+<section id="section-4">
+      <h2 id="name-additional-considerations">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-additional-considerations" class="section-name selfRef">Additional Considerations</a>
+      </h2>
+<div id="idle-conn-conns">
+<section id="section-4.1">
+        <h3 id="name-restarting-idle-connections">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-restarting-idle-connections" class="section-name selfRef">Restarting Idle Connections</a>
+        </h3>
+<p id="section-4.1-1">A known problem with the TCP congestion control algorithms described
+above is that they allow a potentially inappropriate burst of traffic
+to be transmitted after TCP has been idle for a relatively long
+period of time.  After an idle period, TCP cannot use the ACK clock
+to strobe new segments into the network, as all the ACKs have drained
+from the network.  Therefore, as specified above, TCP can potentially
+send a cwnd-size line-rate burst into the network after an idle
+period.  In addition, changing network conditions may have rendered
+TCP's notion of the available end-to-end network capacity between two
+endpoints, as estimated by cwnd, inaccurate during the course of a
+long idle period.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2"><span>[<a href="#Jac88" class="xref">Jac88</a>]</span> recommends that a TCP use slow start to restart transmission
+after a relatively long idle period.  Slow start serves to restart
+the ACK clock, just as it does at the beginning of a transfer.  This
+mechanism has been widely deployed in the following manner.  When TCP
+has not received a segment for more than one retransmission timeout,
+cwnd is reduced to the value of the restart window (RW) before
+transmission begins.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">For the purposes of this standard, we define RW = min(IW,cwnd).<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">Using the last time a segment was received to determine whether or
+not to decrease cwnd can fail to deflate cwnd in the common case of
+persistent HTTP connections <span>[<a href="#HTH98" class="xref">HTH98</a>]</span>.  In this case, a Web server
+receives a request before transmitting data to the Web client.  The
+reception of the request makes the test for an idle connection fail,
+and allows the TCP to begin transmission with a possibly
+inappropriately large cwnd.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.1-5">Therefore, a TCP SHOULD set cwnd to no more than RW before beginning
+transmission if the TCP has not sent data in an interval exceeding
+the retransmission timeout.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="gen-acks">
+<section id="section-4.2">
+        <h3 id="name-generating-acknowledgments">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-generating-acknowledgments" class="section-name selfRef">Generating Acknowledgments</a>
+        </h3>
+<p id="section-4.2-1">The delayed ACK algorithm specified in <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span> SHOULD be used by a
+TCP receiver.  When using delayed ACKs, a TCP receiver MUST NOT
+excessively delay acknowledgments.  Specifically, an ACK SHOULD be
+generated for at least every second full-sized segment, and MUST be
+generated within 500 ms of the arrival of the first unacknowledged
+packet.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The requirement that an ACK "SHOULD" be generated for at least every
+second full-sized segment is listed in <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span> in one place as a
+SHOULD and another as a MUST.  Here we unambiguously state it is a
+SHOULD.  We also emphasize that this is a SHOULD, meaning that an
+implementor should indeed only deviate from this requirement after
+careful consideration of the implications.  See the discussion of
+"Stretch ACK violation" in <span>[<a href="#RFC2525" class="xref">RFC2525</a>]</span> and the references therein for a
+discussion of the possible performance problems with generating ACKs
+less frequently than every second full-sized segment.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">In some cases, the sender and receiver may not agree on what
+constitutes a full-sized segment.  An implementation is deemed to
+comply with this requirement if it sends at least one acknowledgment
+every time it receives 2*RMSS bytes of new data from the sender,
+where RMSS is the Maximum Segment Size specified by the receiver to
+the sender (or the default value of 536 bytes, per <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span>, if the
+receiver does not specify an MSS option during connection
+establishment).  The sender may be forced to use a segment size less
+than RMSS due to the maximum transmission unit (MTU), the path MTU
+discovery algorithm or other factors.  For instance, consider the
+case when the receiver announces an RMSS of X bytes but the sender
+ends up using a segment size of Y bytes (Y &lt; X) due to path MTU
+discovery (or the sender's MTU size).  The receiver will generate
+stretch ACKs if it waits for 2*X bytes to arrive before an ACK is
+sent.  Clearly this will take more than 2 segments of size Y bytes.
+Therefore, while a specific algorithm is not defined, it is desirable
+for receivers to attempt to prevent this situation, for example, by
+acknowledging at least every second segment, regardless of size.
+Finally, we repeat that an ACK MUST NOT be delayed for more than 500
+ms waiting on a second full-sized segment to arrive.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">Out-of-order data segments SHOULD be acknowledged immediately, in
+order to accelerate loss recovery.  To trigger the fast retransmit
+algorithm, the receiver SHOULD send an immediate duplicate ACK when
+it receives a data segment above a gap in the sequence space.  To
+provide feedback to senders recovering from losses, the receiver
+SHOULD send an immediate ACK when it receives a data segment that
+fills in all or part of a gap in the sequence space.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2-5">A TCP receiver MUST NOT generate more than one ACK for every incoming
+segment, other than to update the offered window as the receiving
+application consumes new data (see <span>[<a href="#RFC813" class="xref">RFC813</a>]</span> and page 42 of <span>[<a href="#RFC793" class="xref">RFC793</a>]</span>).<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="loss-rec-mechanisms">
+<section id="section-4.3">
+        <h3 id="name-loss-recovery-mechanisms">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-loss-recovery-mechanisms" class="section-name selfRef">Loss Recovery Mechanisms</a>
+        </h3>
+<p id="section-4.3-1">A number of loss recovery algorithms that augment fast retransmit and
+fast recovery have been suggested by TCP researchers and specified in
+the RFC series.  While some of these algorithms are based on the TCP
+selective acknowledgment (SACK) option <span>[<a href="#RFC2018" class="xref">RFC2018</a>]</span>, such as <span>[<a href="#FF96" class="xref">FF96</a>]</span>,
+<span>[<a href="#MM96a" class="xref">MM96a</a>]</span>, <span>[<a href="#MM96b" class="xref">MM96b</a>]</span>, and <span>[<a href="#RFC3517" class="xref">RFC3517</a>]</span>, others do not require SACKs, such as
+<span>[<a href="#Hoe96" class="xref">Hoe96</a>]</span>, <span>[<a href="#FF96" class="xref">FF96</a>]</span>, and <span>[<a href="#RFC3782" class="xref">RFC3782</a>]</span>.  The non-SACK algorithms use "partial
+acknowledgments" (ACKs that cover previously unacknowledged data, but
+not all the data outstanding when loss was detected) to trigger
+retransmissions.  While this document does not standardize any of the
+specific algorithms that may improve fast retransmit/fast recovery,
+these enhanced algorithms are implicitly allowed, as long as they
+follow the general principles of the basic four algorithms outlined
+above.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">That is, when the first loss in a window of data is detected,
+ssthresh MUST be set to no more than the value given by equation (4).
+Second, until all lost segments in the window of data in question are
+repaired, the number of segments transmitted in each RTT MUST be no
+more than half the number of outstanding segments when the loss was
+detected.  Finally, after all loss in the given window of segments
+has been successfully retransmitted, cwnd MUST be set to no more than
+ssthresh and congestion avoidance MUST be used to further increase
+cwnd.  Loss in two successive windows of data, or the loss of a
+retransmission, should be taken as two indications of congestion and,
+therefore, cwnd (and ssthresh) MUST be lowered twice in this case.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">We RECOMMEND that TCP implementors employ some form of advanced loss
+recovery that can cope with multiple losses in a window of data.  The
+algorithms detailed in <span>[<a href="#RFC3782" class="xref">RFC3782</a>]</span> and <span>[<a href="#RFC3517" class="xref">RFC3517</a>]</span> conform to the general
+principles outlined above.  We note that while these are not the only
+two algorithms that conform to the above general principles these two
+algorithms have been vetted by the community and are currently on the
+Standards Track.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">This document requires a TCP to diminish its sending rate in the
+presence of retransmission timeouts and the arrival of duplicate
+acknowledgments.  An attacker can therefore impair the performance of
+a TCP connection by either causing data packets or their
+acknowledgments to be lost, or by forging excessive duplicate
+acknowledgments.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">In response to the ACK division attack outlined in <span>[<a href="#SCWA99" class="xref">SCWA99</a>]</span>, this
+document RECOMMENDS increasing the congestion window based on the
+number of bytes newly acknowledged in each arriving ACK rather than
+by a particular constant on each arriving ACK (as outlined in
+<a href="#ss-and-cong-avoidance" class="xref">Section 3.1</a>).<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">The Internet, to a considerable degree, relies on the correct
+implementation of these algorithms in order to preserve network
+stability and avoid congestion collapse.  An attacker could cause TCP
+endpoints to respond more aggressively in the face of congestion by
+forging excessive duplicate acknowledgments or excessive
+acknowledgments for new data.  Conceivably, such an attack could
+drive a portion of the network into congestion collapse.<a href="#section-5-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="changes-2001">
+<section id="section-6">
+      <h2 id="name-changes-between-rfc-2001-an">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-changes-between-rfc-2001-an" class="section-name selfRef">Changes between RFC 2001 and RFC 2581</a>
+      </h2>
+<p id="section-6-1"><span>[<a href="#RFC2001" class="xref">RFC2001</a>]</span> was extensively rewritten editorially and it is not
+feasible to itemize the list of changes between <span>[<a href="#RFC2001" class="xref">RFC2001</a>]</span> and
+<span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span>.  The intention of <span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span> was to not change any of the
+recommendations given in <span>[<a href="#RFC2001" class="xref">RFC2001</a>]</span>, but to further clarify cases that
+were not discussed in detail in <span>[<a href="#RFC2001" class="xref">RFC2001</a>]</span>.  Specifically, <span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span>
+suggested what TCP connections should do after a relatively long idle
+period, as well as specified and clarified some of the issues
+pertaining to TCP ACK generation.  Finally, the allowable upper bound
+for the initial congestion window was raised from one to two
+segments.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="changes-2581">
+<section id="section-7">
+      <h2 id="name-changes-relative-to-rfc-258">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-changes-relative-to-rfc-258" class="section-name selfRef">Changes Relative to RFC 2581</a>
+      </h2>
+<p id="section-7-1">A specific definition for "duplicate acknowledgment" has been added,
+based on the definition used by BSD TCP.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">The document now notes that what to do with duplicate ACKs after the
+retransmission timer has fired is future work and explicitly
+unspecified in this document.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">The initial window requirements were changed to allow Larger Initial
+Windows as standardized in <span>[<a href="#RFC3390" class="xref">RFC3390</a>]</span>.  Additionally, the steps to
+take when an initial window is discovered to be too large due to Path
+MTU Discovery <span>[<a href="#RFC1191" class="xref">RFC1191</a>]</span> are detailed.<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">The recommended initial value for ssthresh has been changed to say
+that it SHOULD be arbitrarily high, where it was previously MAY.
+This is to provide additional guidance to implementors on the matter.<a href="#section-7-4" class="pilcrow">¶</a></p>
+<p id="section-7-5">During slow start, the usage of Appropriate Byte Counting <span>[<a href="#RFC3465" class="xref">RFC3465</a>]</span>
+with L=1*SMSS is explicitly recommended.  The method of increasing
+cwnd given in <span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span> is still explicitly allowed.  Byte counting
+during congestion avoidance is also recommended, while the method
+from <span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span> and other safe methods are still allowed.<a href="#section-7-5" class="pilcrow">¶</a></p>
+<p id="section-7-6">The treatment of ssthresh on retransmission timeout was clarified.
+In particular, ssthresh must be set to half the FlightSize on the
+first retransmission of a given segment and then is held constant on
+subsequent retransmissions of the same segment.<a href="#section-7-6" class="pilcrow">¶</a></p>
+<p id="section-7-7">The description of fast retransmit and fast recovery has been
+clarified, and the use of Limited Transmit <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span> is now
+recommended.<a href="#section-7-7" class="pilcrow">¶</a></p>
+<p id="section-7-8">TCPs now MAY limit the number of duplicate ACKs that artificially
+inflate cwnd during loss recovery to the number of segments
+outstanding to avoid the duplicate ACK spoofing attack described in
+<span>[<a href="#SCWA99" class="xref">SCWA99</a>]</span>.<a href="#section-7-8" class="pilcrow">¶</a></p>
+<p id="section-7-9">The restart window has been changed to min(IW,cwnd) from IW.  This
+behavior was described as "experimental" in <span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span>.<a href="#section-7-9" class="pilcrow">¶</a></p>
+<p id="section-7-10">It is now recommended that TCP implementors implement an advanced
+loss recovery algorithm conforming to the principles outlined in this
+document.<a href="#section-7-10" class="pilcrow">¶</a></p>
+<p id="section-7-11">The security considerations have been updated to discuss ACK division
+and recommend byte counting as a counter to this attack.<a href="#section-7-11" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="changes-5681">
+<section id="section-8">
+      <h2 id="name-changes-relative-to-rfc-568">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-changes-relative-to-rfc-568" class="section-name selfRef">Changes Relative to RFC 5681</a>
+    </h2>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="section-9">
+      <h2 id="name-acknowledgments">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="section-9-1">The core algorithms we describe were developed by Van Jacobson
+<span>[<a href="#Jac88" class="xref">Jac88</a>]</span><span>[<a href="#Jac90" class="xref">Jac90</a>]</span>.  In addition, Limited Transmit <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span> was
+developed in conjunction with Hari Balakrishnan and Sally Floyd.  The
+initial congestion window size specified in this document is a result
+of work with Sally Floyd and Craig Partridge <span>[<a href="#RFC2414" class="xref">RFC2414</a>]</span><span>[<a href="#RFC3390" class="xref">RFC3390</a>]</span>.<a href="#section-9-1" class="pilcrow">¶</a></p>
+<p id="section-9-2">W. Richard ("Rich") Stevens wrote the first version of this document
+<span>[<a href="#RFC2001" class="xref">RFC2001</a>]</span> and co-authored the second version <span>[<a href="#RFC2581" class="xref">RFC2581</a>]</span>.  This present
+version much benefits from his clarity and thoughtfulness of
+description, and we are grateful for Rich's contributions in
+elucidating TCP congestion control, as well as in more broadly
+helping us understand numerous issues relating to networking.<a href="#section-9-2" class="pilcrow">¶</a></p>
+<p id="section-9-3">We wish to emphasize that the shortcomings and mistakes of this
+document are solely the responsibility of the current authors.<a href="#section-9-3" class="pilcrow">¶</a></p>
+<p id="section-9-4">Some of the text from this document is taken from "TCP/IP
+Illustrated, Volume 1: The Protocols" by W. Richard Stevens
+(Addison-Wesley, 1994) and "TCP/IP Illustrated, Volume 2: The
+Implementation" by Gary R. Wright and W. Richard Stevens (Addison-
+Wesley, 1995).  This material is used with the permission of
+Addison-Wesley.<a href="#section-9-4" class="pilcrow">¶</a></p>
+<p id="section-9-5">Anil Agarwal, Steve Arden, Neal Cardwell, Noritoshi Demizu, Gorry
+Fairhurst, Kevin Fall, John Heffner, Alfred Hoenes, Sally Floyd,
+Reiner Ludwig, Matt Mathis, Craig Partridge, and Joe Touch
+contributed a number of helpful suggestions.<a href="#section-9-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1122">[RFC1122]</dt>
+        <dd>
+<span class="refAuthor">Braden, R., Ed.</span>, <span class="refTitle">"Requirements for Internet Hosts - Communication Layers"</span>, <span class="seriesInfo">STD 3</span>, <span class="seriesInfo">RFC 1122</span>, <span class="seriesInfo">DOI 10.17487/RFC1122</span>, <time datetime="1989-10" class="refDate">October 1989</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc1122">https://datatracker.ietf.org/doc/html/rfc1122</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC1191">[RFC1191]</dt>
+        <dd>
+<span class="refAuthor">Mogul, J.</span> and <span class="refAuthor">S. Deering</span>, <span class="refTitle">"Path MTU discovery"</span>, <span class="seriesInfo">RFC 1191</span>, <span class="seriesInfo">DOI 10.17487/RFC1191</span>, <time datetime="1990-11" class="refDate">November 1990</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc1191">https://datatracker.ietf.org/doc/html/rfc1191</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2119">https://datatracker.ietf.org/doc/html/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC793">[RFC793]</dt>
+        <dd>
+<span class="refAuthor">Postel, J.</span>, <span class="refTitle">"Transmission Control Protocol"</span>, <span class="seriesInfo">STD 7</span>, <span class="seriesInfo">RFC 793</span>, <span class="seriesInfo">DOI 10.17487/RFC0793</span>, <time datetime="1981-09" class="refDate">September 1981</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc793">https://datatracker.ietf.org/doc/html/rfc793</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc8174">https://datatracker.ietf.org/doc/html/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="CJ89">[CJ89]</dt>
+        <dd>
+<span class="refTitle">"*** BROKEN REFERENCE ***"</span>. </dd>
+<dd class="break"></dd>
+<dt id="FF96">[FF96]</dt>
+        <dd>
+<span class="refAuthor">Fall, K.</span> and <span class="refAuthor">S. Floyd</span>, <span class="refTitle">"Simulation-based comparisons of Tahoe, Reno and SACK TCP"</span>, <span class="seriesInfo">ACM SIGCOMM Computer Communication Review Vol. 26, pp. 5-21</span>, <span class="seriesInfo">DOI 10.1145/235160.235162</span>, <time datetime="1996-07" class="refDate">July 1996</time>, <span>&lt;<a href="https://doi.org/10.1145/235160.235162">https://doi.org/10.1145/235160.235162</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Hoe96">[Hoe96]</dt>
+        <dd>
+<span class="refAuthor">Hoe, J.</span>, <span class="refTitle">"Improving the start-up behavior of a congestion control scheme for TCP"</span>, <span class="seriesInfo">Conference proceedings on Applications, technologies, architectures, and protocols for computer communications - SIGCOMM '96</span>, <span class="seriesInfo">DOI 10.1145/248156.248180</span>, <time datetime="1996" class="refDate">1996</time>, <span>&lt;<a href="https://doi.org/10.1145/248156.248180">https://doi.org/10.1145/248156.248180</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="HTH98">[HTH98]</dt>
+        <dd>
+<span class="refAuthor">Touch, J. D.</span>, <span class="refAuthor">Heidemann, J.</span>, and <span class="refAuthor">A. Hughes</span>, <span class="refTitle">"Issues in TCP Slow-Start Restart After Idle"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-tcpimpl-restart-00</span>, <time datetime="1998-04-10" class="refDate">10 April 1998</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-tcpimpl-restart-00">https://datatracker.ietf.org/doc/html/draft-ietf-tcpimpl-restart-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Jac88">[Jac88]</dt>
+        <dd>
+<span class="refAuthor">Jacobson, V.</span>, <span class="refTitle">"Congestion avoidance and control"</span>, <span class="seriesInfo">Symposium proceedings on Communications architectures and protocols - SIGCOMM '88</span>, <span class="seriesInfo">DOI 10.1145/52324.52356</span>, <time datetime="1988" class="refDate">1988</time>, <span>&lt;<a href="https://doi.org/10.1145/52324.52356">https://doi.org/10.1145/52324.52356</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Jac90">[Jac90]</dt>
+        <dd>
+<span class="refAuthor">Postel, J.</span>, <span class="refTitle">"Internet Protocol"</span>, <span class="seriesInfo">STD 5</span>, <span class="seriesInfo">RFC 791</span>, <span class="seriesInfo">DOI 10.17487/RFC0791</span>, <time datetime="1981-09" class="refDate">September 1981</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc791">https://datatracker.ietf.org/doc/html/rfc791</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="MM96a">[MM96a]</dt>
+        <dd>
+<span class="refAuthor">Mathis, M.</span> and <span class="refAuthor">J. Mahdavi</span>, <span class="refTitle">"Forward acknowledgement: refining TCP congestion control"</span>, <span class="seriesInfo">ACM SIGCOMM Computer Communication Review Vol. 26, pp. 281-291</span>, <span class="seriesInfo">DOI 10.1145/248157.248181</span>, <time datetime="1996-10" class="refDate">October 1996</time>, <span>&lt;<a href="https://doi.org/10.1145/248157.248181">https://doi.org/10.1145/248157.248181</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="MM96b">[MM96b]</dt>
+        <dd>
+<span class="refAuthor">Postel, J.</span>, <span class="refTitle">"Internet Protocol"</span>, <span class="seriesInfo">STD 5</span>, <span class="seriesInfo">RFC 791</span>, <span class="seriesInfo">DOI 10.17487/RFC0791</span>, <time datetime="1981-09" class="refDate">September 1981</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc791">https://datatracker.ietf.org/doc/html/rfc791</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Pax97">[Pax97]</dt>
+        <dd>
+<span class="refAuthor">Paxson, V.</span>, <span class="refTitle">"End-to-end Internet packet dynamics"</span>, <span class="seriesInfo">Proceedings of the ACM SIGCOMM '97 conference on Applications, technologies, architectures, and protocols for computer communication - SIGCOMM '97</span>, <span class="seriesInfo">DOI 10.1145/263105.263155</span>, <time datetime="1997" class="refDate">1997</time>, <span>&lt;<a href="https://doi.org/10.1145/263105.263155">https://doi.org/10.1145/263105.263155</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2001">[RFC2001]</dt>
+        <dd>
+<span class="refAuthor">Stevens, W.</span>, <span class="refTitle">"TCP Slow Start, Congestion Avoidance, Fast Retransmit, and Fast Recovery Algorithms"</span>, <span class="seriesInfo">RFC 2001</span>, <span class="seriesInfo">DOI 10.17487/RFC2001</span>, <time datetime="1997-01" class="refDate">January 1997</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2001">https://datatracker.ietf.org/doc/html/rfc2001</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2018">[RFC2018]</dt>
+        <dd>
+<span class="refAuthor">Mathis, M.</span>, <span class="refAuthor">Mahdavi, J.</span>, <span class="refAuthor">Floyd, S.</span>, and <span class="refAuthor">A. Romanow</span>, <span class="refTitle">"TCP Selective Acknowledgment Options"</span>, <span class="seriesInfo">RFC 2018</span>, <span class="seriesInfo">DOI 10.17487/RFC2018</span>, <time datetime="1996-10" class="refDate">October 1996</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2018">https://datatracker.ietf.org/doc/html/rfc2018</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2414">[RFC2414]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Floyd, S.</span>, and <span class="refAuthor">C. Partridge</span>, <span class="refTitle">"Increasing TCP's Initial Window"</span>, <span class="seriesInfo">RFC 2414</span>, <span class="seriesInfo">DOI 10.17487/RFC2414</span>, <time datetime="1998-09" class="refDate">September 1998</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2414">https://datatracker.ietf.org/doc/html/rfc2414</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2525">[RFC2525]</dt>
+        <dd>
+<span class="refAuthor">Paxson, V.</span>, <span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Dawson, S.</span>, <span class="refAuthor">Fenner, W.</span>, <span class="refAuthor">Griner, J.</span>, <span class="refAuthor">Heavens, I.</span>, <span class="refAuthor">Lahey, K.</span>, <span class="refAuthor">Semke, J.</span>, and <span class="refAuthor">B. Volz</span>, <span class="refTitle">"Known TCP Implementation Problems"</span>, <span class="seriesInfo">RFC 2525</span>, <span class="seriesInfo">DOI 10.17487/RFC2525</span>, <time datetime="1999-03" class="refDate">March 1999</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2525">https://datatracker.ietf.org/doc/html/rfc2525</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2581">[RFC2581]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Paxson, V.</span>, and <span class="refAuthor">W. Stevens</span>, <span class="refTitle">"TCP Congestion Control"</span>, <span class="seriesInfo">RFC 2581</span>, <span class="seriesInfo">DOI 10.17487/RFC2581</span>, <time datetime="1999-04" class="refDate">April 1999</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2581">https://datatracker.ietf.org/doc/html/rfc2581</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2883">[RFC2883]</dt>
+        <dd>
+<span class="refAuthor">Floyd, S.</span>, <span class="refAuthor">Mahdavi, J.</span>, <span class="refAuthor">Mathis, M.</span>, and <span class="refAuthor">M. Podolsky</span>, <span class="refTitle">"An Extension to the Selective Acknowledgement (SACK) Option for TCP"</span>, <span class="seriesInfo">RFC 2883</span>, <span class="seriesInfo">DOI 10.17487/RFC2883</span>, <time datetime="2000-07" class="refDate">July 2000</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2883">https://datatracker.ietf.org/doc/html/rfc2883</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2988">[RFC2988]</dt>
+        <dd>
+<span class="refAuthor">Paxson, V.</span> and <span class="refAuthor">M. Allman</span>, <span class="refTitle">"Computing TCP's Retransmission Timer"</span>, <span class="seriesInfo">RFC 2988</span>, <span class="seriesInfo">DOI 10.17487/RFC2988</span>, <time datetime="2000-11" class="refDate">November 2000</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc2988">https://datatracker.ietf.org/doc/html/rfc2988</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3042">[RFC3042]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Balakrishnan, H.</span>, and <span class="refAuthor">S. Floyd</span>, <span class="refTitle">"Enhancing TCP's Loss Recovery Using Limited Transmit"</span>, <span class="seriesInfo">RFC 3042</span>, <span class="seriesInfo">DOI 10.17487/RFC3042</span>, <time datetime="2001-01" class="refDate">January 2001</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc3042">https://datatracker.ietf.org/doc/html/rfc3042</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3168">[RFC3168]</dt>
+        <dd>
+<span class="refAuthor">Ramakrishnan, K.</span>, <span class="refAuthor">Floyd, S.</span>, and <span class="refAuthor">D. Black</span>, <span class="refTitle">"The Addition of Explicit Congestion Notification (ECN) to IP"</span>, <span class="seriesInfo">RFC 3168</span>, <span class="seriesInfo">DOI 10.17487/RFC3168</span>, <time datetime="2001-09" class="refDate">September 2001</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc3168">https://datatracker.ietf.org/doc/html/rfc3168</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3390">[RFC3390]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Floyd, S.</span>, and <span class="refAuthor">C. Partridge</span>, <span class="refTitle">"Increasing TCP's Initial Window"</span>, <span class="seriesInfo">RFC 3390</span>, <span class="seriesInfo">DOI 10.17487/RFC3390</span>, <time datetime="2002-10" class="refDate">October 2002</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc3390">https://datatracker.ietf.org/doc/html/rfc3390</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3465">[RFC3465]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refTitle">"TCP Congestion Control with Appropriate Byte Counting (ABC)"</span>, <span class="seriesInfo">RFC 3465</span>, <span class="seriesInfo">DOI 10.17487/RFC3465</span>, <time datetime="2003-02" class="refDate">February 2003</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc3465">https://datatracker.ietf.org/doc/html/rfc3465</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3517">[RFC3517]</dt>
+        <dd>
+<span class="refAuthor">Blanton, E.</span>, <span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Fall, K.</span>, and <span class="refAuthor">L. Wang</span>, <span class="refTitle">"A Conservative Selective Acknowledgment (SACK)-based Loss Recovery Algorithm for TCP"</span>, <span class="seriesInfo">RFC 3517</span>, <span class="seriesInfo">DOI 10.17487/RFC3517</span>, <time datetime="2003-04" class="refDate">April 2003</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc3517">https://datatracker.ietf.org/doc/html/rfc3517</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3782">[RFC3782]</dt>
+        <dd>
+<span class="refAuthor">Floyd, S.</span>, <span class="refAuthor">Henderson, T.</span>, and <span class="refAuthor">A. Gurtov</span>, <span class="refTitle">"The NewReno Modification to TCP's Fast Recovery Algorithm"</span>, <span class="seriesInfo">RFC 3782</span>, <span class="seriesInfo">DOI 10.17487/RFC3782</span>, <time datetime="2004-04" class="refDate">April 2004</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc3782">https://datatracker.ietf.org/doc/html/rfc3782</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC4821">[RFC4821]</dt>
+        <dd>
+<span class="refAuthor">Mathis, M.</span> and <span class="refAuthor">J. Heffner</span>, <span class="refTitle">"Packetization Layer Path MTU Discovery"</span>, <span class="seriesInfo">RFC 4821</span>, <span class="seriesInfo">DOI 10.17487/RFC4821</span>, <time datetime="2007-03" class="refDate">March 2007</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc4821">https://datatracker.ietf.org/doc/html/rfc4821</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5681">[RFC5681]</dt>
+        <dd>
+<span class="refAuthor">Allman, M.</span>, <span class="refAuthor">Paxson, V.</span>, and <span class="refAuthor">E. Blanton</span>, <span class="refTitle">"TCP Congestion Control"</span>, <span class="seriesInfo">RFC 5681</span>, <span class="seriesInfo">DOI 10.17487/RFC5681</span>, <time datetime="2009-09" class="refDate">September 2009</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc5681">https://datatracker.ietf.org/doc/html/rfc5681</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC813">[RFC813]</dt>
+        <dd>
+<span class="refAuthor">Clark, D.</span>, <span class="refTitle">"Window and Acknowledgement Strategy in TCP"</span>, <span class="seriesInfo">RFC 813</span>, <span class="seriesInfo">DOI 10.17487/RFC0813</span>, <time datetime="1982-07" class="refDate">July 1982</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/rfc813">https://datatracker.ietf.org/doc/html/rfc813</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SCWA99">[SCWA99]</dt>
+        <dd>
+<span class="refAuthor">Savage, S.</span>, <span class="refAuthor">Cardwell, N.</span>, <span class="refAuthor">Wetherall, D.</span>, and <span class="refAuthor">T. Anderson</span>, <span class="refTitle">"TCP congestion control with a misbehaving receiver"</span>, <span class="seriesInfo">ACM SIGCOMM Computer Communication Review Vol. 29, pp. 71-78</span>, <span class="seriesInfo">DOI 10.1145/505696.505704</span>, <time datetime="1999-10" class="refDate">October 1999</time>, <span>&lt;<a href="https://doi.org/10.1145/505696.505704">https://doi.org/10.1145/505696.505704</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="Ste94">[Ste94]</dt>
+        <dd>
+<span class="refTitle">"*** BROKEN REFERENCE ***"</span>. </dd>
+<dd class="break"></dd>
+<dt id="WS95">[WS95]</dt>
+      <dd>
+<span class="refTitle">"*** BROKEN REFERENCE ***"</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="authors-addresses">
+<section id="appendix-A">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Lars Eggert (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">NetApp</span></div>
+<div dir="auto" class="left"><span class="street-address">Stenbergintie 12 B</span></div>
+<div dir="auto" class="left">FI-<span class="postal-code">02700</span> <span class="locality">Kauniainen</span>
+</div>
+<div dir="auto" class="left"><span class="country-name">Finland</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:lars@eggert.org" class="email">lars@eggert.org</a>
+</div>
+<div class="url">
+<span>URI:</span>
+<a href="https://eggert.org/" class="url">https://eggert.org/</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
