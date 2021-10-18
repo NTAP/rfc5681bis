@@ -4,9 +4,9 @@
 
 TCPM                                                      L. Eggert, Ed.
 Internet-Draft                                                    NetApp
-Obsoletes: 5681 (if approved)                            15 October 2021
+Obsoletes: 5681 (if approved)                            18 October 2021
 Intended status: Standards Track                                        
-Expires: 18 April 2022
+Expires: 21 April 2022
 
 
                          TCP Congestion Control
@@ -20,6 +20,17 @@ Abstract
    begin transmission after a relatively long idle period, as well as
    discussing various acknowledgment generation methods.  This document
    obsoletes RFC 5681.
+
+Discussion Venues
+
+   This note is to be removed before publishing as an RFC.
+
+   Discussion of this document takes place on the TCP Maintenance and
+   Minor Extensions Working Group mailing list (tcpm@ietf.org), which is
+   archived at https://mailarchive.ietf.org/arch/browse/tcpm/.
+
+   Source for this draft and an issue tracker can be found at
+   https://github.com/larseggert/rfc5681bis.
 
 Status of This Memo
 
@@ -36,7 +47,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 18 April 2022.
+   This Internet-Draft will expire on 21 April 2022.
 
 Copyright Notice
 
@@ -79,6 +90,7 @@ Table of Contents
    6.  Changes between RFC 2001 and RFC 2581
    7.  Changes Relative to RFC 2581
    8.  Changes Relative to RFC 5681
+     8.1.  draft-eggert-tcpm-rfc5681bis-00
    9.  Acknowledgments
    10. References
      10.1.  Normative References
@@ -686,6 +698,10 @@ Table of Contents
 
 8.  Changes Relative to RFC 5681
 
+8.1.  draft-eggert-tcpm-rfc5681bis-00
+
+   *  Converted to Markdown, causing boilerplate and reference changes
+
 9.  Acknowledgments
 
    The core algorithms we describe were developed by Van Jacobson
@@ -744,7 +760,11 @@ Table of Contents
 
 10.2.  Informative References
 
-   [CJ89]     "*** BROKEN REFERENCE ***".
+   [CJ89]     Chiu, D. and R. Jain, "Analysis of the increase and
+              decrease algorithms for congestion avoidance in computer
+              networks", Computer Networks and ISDN Systems Vol. 17, pp.
+              1-14, DOI 10.1016/0169-7552(89)90019-6, June 1989,
+              <https://doi.org/10.1016/0169-7552(89)90019-6>.
 
    [FF96]     Fall, K. and S. Floyd, "Simulation-based comparisons of
               Tahoe, Reno and SACK TCP", ACM SIGCOMM Computer
@@ -770,9 +790,9 @@ Table of Contents
               protocols - SIGCOMM '88, DOI 10.1145/52324.52356, 1988,
               <https://doi.org/10.1145/52324.52356>.
 
-   [Jac90]    Postel, J., "Internet Protocol", STD 5, RFC 791,
-              DOI 10.17487/RFC0791, September 1981,
-              <https://datatracker.ietf.org/doc/html/rfc791>.
+   [Jac90]    Jacobson, V., "Modified TCP Congestion Avoidance
+              Algorithm", end2end-interest mailing list, 30 April 1990,
+              <ftp://ftp.isi.edu/end2end/end2end-interest-1990.mail>.
 
    [MM96a]    Mathis, M. and J. Mahdavi, "Forward acknowledgement:
               refining TCP congestion control", ACM SIGCOMM Computer
@@ -780,9 +800,10 @@ Table of Contents
               DOI 10.1145/248157.248181, October 1996,
               <https://doi.org/10.1145/248157.248181>.
 
-   [MM96b]    Postel, J., "Internet Protocol", STD 5, RFC 791,
-              DOI 10.17487/RFC0791, September 1981,
-              <https://datatracker.ietf.org/doc/html/rfc791>.
+   [MM96b]    Mathis, M. and J. Mahdavi, "TCP Rate-Halving with Bounding
+              Parameters", Technical Report, 19 December 1997,
+              <https://web.archive.org/web/20120322011914/
+              http://www.psc.edu/networking/papers/FACKnotes/current/>.
 
    [Pax97]    Paxson, V., "End-to-end Internet packet dynamics",
               Proceedings of the ACM SIGCOMM '97 conference on
@@ -871,9 +892,13 @@ Table of Contents
               DOI 10.1145/505696.505704, October 1999,
               <https://doi.org/10.1145/505696.505704>.
 
-   [Ste94]    "*** BROKEN REFERENCE ***".
+   [Ste94]    Stevens, W.R., "TCP/IP Illustrated, Volume 1: The
+              Protocols", Addison-Wesley Professional Computing Series,
+              1994.
 
-   [WS95]     "*** BROKEN REFERENCE ***".
+   [WS95]     Stevens, W.R. and G.R. Wright, "TCP/IP Illustrated, Volume
+              2: The Implementation", Addison-Wesley Professional
+              Computing Series, 1995.
 
 Author's Address
 
