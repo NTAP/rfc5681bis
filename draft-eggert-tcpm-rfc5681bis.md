@@ -31,9 +31,24 @@ informative:
   Hoe96: DOI.10.1145/248156.248180
   HTH98: I-D.draft-ietf-tcpimpl-restart
   Jac88: DOI.10.1145/52324.52356
-  Jac90: RFC791 # XXX
+  Jac90: # FIXME
+    author:
+    - name: Van Jacobson
+    title: Modified TCP Congestion Avoidance Algorithm
+    date: 1990-4-30
+    seriesinfo:
+      end2end-interest: mailing list
+    target: ftp://ftp.isi.edu/end2end/end2end-interest-1990.mail
   MM96a: DOI.10.1145/248157.248181
-  MM96b: RFC791 #XXX
+  MM96b: # FIXME
+    author:
+    - name: Matt Mathis
+    - name: Jamshid Mahdavi
+    title: TCP Rate-Halving with Bounding Parameters
+    date: 1997-12-19
+    seriesinfo:
+      Technical: Report
+    target: https://web.archive.org/web/20120322011914/http://www.psc.edu/networking/papers/FACKnotes/current/
   Pax97: DOI.10.1145/263105.263155
   SCWA99: DOI.10.1145/505696.505704
   Ste94:
@@ -682,6 +697,10 @@ The security considerations have been updated to discuss ACK division
 and recommend byte counting as a counter to this attack.
 
 # Changes Relative to RFC 5681 {#changes-5681}
+
+## draft-eggert-tcpm-rfc5681bis-00
+
+- Converted to Markdown, causing boilerplate and reference changes
 
 # Acknowledgments
 <!--
