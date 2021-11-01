@@ -13,6 +13,20 @@ pi: [toc, sortrefs, symrefs, docmapping]
 
 author:
 -
+  name: Mark Allman
+  org: International Computer Science Institute (ICSI)
+  abbrev: ICSI
+  street:
+  - 1947 Center Street
+  - Suite 600
+  city: Berkeley
+  region: CA
+  code: 94704-1198
+  country: USA
+  phone: +1 440 235 1792
+  email: mallman@icir.org
+  uri: "http://www.icir.org/mallman/"
+-
   name: Lars Eggert
   org: NetApp
   street: Stenbergintie 12 B
@@ -24,8 +38,27 @@ author:
   role: editor
 
 normative:
+  RFC1122:
+  RFC1191:
+  RFC793:
 
 informative:
+  RFC2001:
+  RFC2018:
+  RFC2414:
+  RFC2525:
+  RFC2581:
+  RFC2883:
+  RFC2988:
+  RFC3042:
+  RFC3168:
+  RFC3390:
+  RFC3465:
+  RFC3517:
+  RFC3782:
+  RFC4821:
+  RFC5681:
+  RFC813:
   CJ89: DOI.10.1016/0169-7552(89)90019-6
   FF96: DOI.10.1145/235160.235162
   Hoe96: DOI.10.1145/248156.248180
@@ -80,10 +113,10 @@ obsoletes RFC 5681.
 
 # Introduction {#intro}
 
-This document specifies four TCP {{!RFC793}} congestion control
+This document specifies four TCP {{RFC793}} congestion control
 algorithms: slow start, congestion avoidance, fast retransmit and
 fast recovery.  These algorithms were devised in {{Jac88}} and {{Jac90}}.
-Their use with TCP is standardized in {{!RFC1122}}.  Additional early
+Their use with TCP is standardized in {{RFC1122}}.  Additional early
 work in additive-increase, multiplicative-decrease congestion control
 is given in {{CJ89}}.
 
@@ -96,8 +129,8 @@ document specifies what TCP connections should do after a relatively
 long idle period, as well as specifying and clarifying some of the
 issues pertaining to TCP ACK generation.
 
-This document obsoletes {{?RFC5681}}, which in turn obsoleted
-{{?RFC2581}}, which in turn obsoleted {{?RFC2001}}.
+This document obsoletes {{RFC5681}}, which in turn obsoleted
+{{RFC2581}}, which in turn obsoleted {{RFC2001}}.
 
 This document is organized as follows.  {{definitions}} provides various
 definitions that will be used throughout the document.  {{algorithms}}
@@ -120,7 +153,7 @@ SENDER MAXIMUM SEGMENT SIZE (SMSS):
 : The SMSS is the size of the
 largest segment that the sender can transmit.  This value can be
 based on the maximum transmission unit of the network, the path
-MTU discovery {{!RFC1191}}{{?RFC4821}} algorithm, RMSS (see next item),
+MTU discovery {{RFC1191}}{{RFC4821}} algorithm, RMSS (see next item),
 or other factors.  The size does not include the TCP/IP headers
 and options.
 
@@ -129,7 +162,7 @@ RECEIVER MAXIMUM SEGMENT SIZE (RMSS):
 largest segment the receiver is willing to accept.  This is the
 value specified in the MSS option sent by the receiver during
 connection startup.  Or, if the MSS option is not used, it is 536
-bytes {{!RFC1122}}.  The size does not include the TCP/IP headers and
+bytes {{RFC1122}}.  The size does not include the TCP/IP headers and
 options.
 
 FULL-SIZED SEGMENT:
@@ -171,12 +204,12 @@ DUPLICATE ACKNOWLEDGMENT:
 the ACK has outstanding data, (b) the incoming acknowledgment
 carries no data, (c) the SYN and FIN bits are both off, (d) the
 acknowledgment number is equal to the greatest acknowledgment
-received on the given connection (TCP.UNA from {{!RFC793}}) and (e)
+received on the given connection (TCP.UNA from {{RFC793}}) and (e)
 the advertised window in the incoming acknowledgment equals the
 advertised window in the last incoming acknowledgment.
 
 : Alternatively, a TCP that utilizes selective acknowledgments
-(SACKs) {{?RFC2018}}{{?RFC2883}} can leverage the SACK information to
+(SACKs) {{RFC2018}}{{RFC2883}} can leverage the SACK information to
 determine when an incoming ACK is a "duplicate" (e.g., if the ACK
 contains previously unknown SACK information).
 
@@ -193,7 +226,7 @@ the data to be sent).
 
 Also, note that the algorithms specified in this document work in
 terms of using loss as the signal of congestion.  Explicit Congestion
-Notification (ECN) could also be used as specified in {{?RFC3168}}.
+Notification (ECN) could also be used as specified in {{RFC3168}}.
 
 ## Slow Start and Congestion Avoidance {#ss-and-cong-avoidance}
 
@@ -233,17 +266,17 @@ if SMSS <= 1095 bytes:
     IW = 4 * SMSS bytes and MUST NOT be more than 4 segments
 ~~~
 
-As specified in {{?RFC3390}}, the SYN/ACK and the acknowledgment of the
+As specified in {{RFC3390}}, the SYN/ACK and the acknowledgment of the
 SYN/ACK MUST NOT increase the size of the congestion window.
 Further, if the SYN or SYN/ACK is lost, the initial window used by a
 sender after a correctly transmitted SYN MUST be one segment
 consisting of at most SMSS bytes.
 
 A detailed rationale and discussion of the IW setting is provided in
-{{?RFC3390}}.
+{{RFC3390}}.
 
 When initial congestion windows of more than one segment are
-implemented along with Path MTU Discovery {{!RFC1191}}, and the MSS
+implemented along with Path MTU Discovery {{RFC1191}}, and the MSS
 being used is found to be too large, the congestion window cwnd
 SHOULD be reduced to prevent large bursts of smaller segments.
 Specifically, cwnd SHOULD be reduced by the ratio of the old segment
@@ -277,7 +310,7 @@ that TCP implementations increase cwnd, per:
 
 where N is the number of previously unacknowledged bytes acknowledged
 in the incoming ACK.  This adjustment is part of Appropriate Byte
-Counting {{?RFC3465}} and provides robustness against misbehaving
+Counting {{RFC3465}} and provides robustness against misbehaving
 receivers that may attempt to induce a sender to artificially inflate
 cwnd using a mechanism known as "ACK Division" {{SCWA99}}.  ACK
 Division consists of a receiver sending multiple ACKs for a single
@@ -296,7 +329,7 @@ incrementing cwnd during congestion avoidance are:
 
 - MUST NOT increment cwnd by more than SMSS bytes
 
-We note that {{?RFC3465}} allows for cwnd increases of more than SMSS
+We note that {{RFC3465}} allows for cwnd increases of more than SMSS
 bytes for incoming acknowledgments during slow start on an
 experimental basis; however, such behavior is not allowed as part of
 the standard.
@@ -333,7 +366,7 @@ byte.
 
 Implementation Note: Older implementations have an additional
 additive constant on the right-hand side of equation (3).  This is
-incorrect and can actually lead to diminished performance {{?RFC2525}}.
+incorrect and can actually lead to diminished performance {{RFC2525}}.
 
 Implementation Note: Some implementations maintain cwnd in units of
 bytes, while others in units of full-sized segments.  The latter will
@@ -361,7 +394,7 @@ Implementation Note: An easy mistake to make is to simply use cwnd,
 rather than FlightSize, which in some implementations may
 incidentally increase well beyond rwnd.
 
-Furthermore, upon a timeout (as specified in {{?RFC2988}}) cwnd MUST be
+Furthermore, upon a timeout (as specified in {{RFC2988}}) cwnd MUST be
 set to no more than the loss window, LW, which equals 1 full-sized
 segment (regardless of the value of IW).  Therefore, after
 retransmitting the dropped segment the TCP sender uses the slow start
@@ -369,7 +402,7 @@ algorithm to increase the window from 1 full-sized segment to the new
 value of ssthresh, at which point congestion avoidance again takes
 over.
 
-As shown in {{FF96}} and {{?RFC3782}}, slow-start-based loss recovery
+As shown in {{FF96}} and {{RFC3782}}, slow-start-based loss recovery
 after a timeout can cause spurious retransmissions that trigger
 duplicate acknowledgments.  The reaction to the arrival of these
 duplicate ACKs in TCP implementations varies widely.  This document
@@ -423,17 +456,17 @@ The fast retransmit and fast recovery algorithms are implemented
 together as follows.
 
 1.  On the first and second duplicate ACKs received at a sender, a
-    TCP SHOULD send a segment of previously unsent data per {{?RFC3042}}
+    TCP SHOULD send a segment of previously unsent data per {{RFC3042}}
     provided that the receiver's advertised window allows, the total
     FlightSize would remain less than or equal to cwnd plus 2\*SMSS,
     and that new data is available for transmission.  Further, the
     TCP sender MUST NOT change cwnd to reflect these two segments
-    {{?RFC3042}}.  Note that a sender using SACK {{?RFC2018}} MUST NOT send
+    {{RFC3042}}.  Note that a sender using SACK {{RFC2018}} MUST NOT send
     new data unless the incoming duplicate acknowledgment contains
     new SACK information.
 
 2.  When the third duplicate ACK is received, a TCP MUST set ssthresh
-    to no more than the value given in equation (4).  When {{?RFC3042}}
+    to no more than the value given in equation (4).  When {{RFC3042}}
     is in use, additional data sent in limited transmit MUST NOT be
     included in this calculation.
 
@@ -520,7 +553,7 @@ the retransmission timeout.
 
 ## Generating Acknowledgments {#gen-acks}
 
-The delayed ACK algorithm specified in {{!RFC1122}} SHOULD be used by a
+The delayed ACK algorithm specified in {{RFC1122}} SHOULD be used by a
 TCP receiver.  When using delayed ACKs, a TCP receiver MUST NOT
 excessively delay acknowledgments.  Specifically, an ACK SHOULD be
 generated for at least every second full-sized segment, and MUST be
@@ -528,12 +561,12 @@ generated within 500 ms of the arrival of the first unacknowledged
 packet.
 
 The requirement that an ACK "SHOULD" be generated for at least every
-second full-sized segment is listed in {{!RFC1122}} in one place as a
+second full-sized segment is listed in {{RFC1122}} in one place as a
 SHOULD and another as a MUST.  Here we unambiguously state it is a
 SHOULD.  We also emphasize that this is a SHOULD, meaning that an
 implementor should indeed only deviate from this requirement after
 careful consideration of the implications.  See the discussion of
-"Stretch ACK violation" in {{?RFC2525}} and the references therein for a
+"Stretch ACK violation" in {{RFC2525}} and the references therein for a
 discussion of the possible performance problems with generating ACKs
 less frequently than every second full-sized segment.
 
@@ -542,7 +575,7 @@ constitutes a full-sized segment.  An implementation is deemed to
 comply with this requirement if it sends at least one acknowledgment
 every time it receives 2\*RMSS bytes of new data from the sender,
 where RMSS is the Maximum Segment Size specified by the receiver to
-the sender (or the default value of 536 bytes, per {{!RFC1122}}, if the
+the sender (or the default value of 536 bytes, per {{RFC1122}}, if the
 receiver does not specify an MSS option during connection
 establishment).  The sender may be forced to use a segment size less
 than RMSS due to the maximum transmission unit (MTU), the path MTU
@@ -568,16 +601,16 @@ fills in all or part of a gap in the sequence space.
 
 A TCP receiver MUST NOT generate more than one ACK for every incoming
 segment, other than to update the offered window as the receiving
-application consumes new data (see {{?RFC813}} and page 42 of {{!RFC793}}).
+application consumes new data (see {{RFC813}} and page 42 of {{RFC793}}).
 
 ## Loss Recovery Mechanisms {#loss-rec-mechanisms}
 
 A number of loss recovery algorithms that augment fast retransmit and
 fast recovery have been suggested by TCP researchers and specified in
 the RFC series.  While some of these algorithms are based on the TCP
-selective acknowledgment (SACK) option {{?RFC2018}}, such as {{FF96}},
-{{MM96a}}, {{MM96b}}, and {{?RFC3517}}, others do not require SACKs, such as
-{{Hoe96}}, {{FF96}}, and {{?RFC3782}}.  The non-SACK algorithms use "partial
+selective acknowledgment (SACK) option {{RFC2018}}, such as {{FF96}},
+{{MM96a}}, {{MM96b}}, and {{RFC3517}}, others do not require SACKs, such as
+{{Hoe96}}, {{FF96}}, and {{RFC3782}}.  The non-SACK algorithms use "partial
 acknowledgments" (ACKs that cover previously unacknowledged data, but
 not all the data outstanding when loss was detected) to trigger
 retransmissions.  While this document does not standardize any of the
@@ -600,7 +633,7 @@ therefore, cwnd (and ssthresh) MUST be lowered twice in this case.
 
 We RECOMMEND that TCP implementors employ some form of advanced loss
 recovery that can cope with multiple losses in a window of data.  The
-algorithms detailed in {{?RFC3782}} and {{?RFC3517}} conform to the general
+algorithms detailed in {{RFC3782}} and {{RFC3517}} conform to the general
 principles outlined above.  We note that while these are not the only
 two algorithms that conform to the above general principles these two
 algorithms have been vetted by the community and are currently on the
@@ -637,11 +670,11 @@ This document has no IANA actions.
 
 # Changes between RFC 2001 and RFC 2581 {#changes-2001}
 
-{{?RFC2001}} was extensively rewritten editorially and it is not
-feasible to itemize the list of changes between {{?RFC2001}} and
-{{?RFC2581}}.  The intention of {{?RFC2581}} was to not change any of the
-recommendations given in {{?RFC2001}}, but to further clarify cases that
-were not discussed in detail in {{?RFC2001}}.  Specifically, {{?RFC2581}}
+{{RFC2001}} was extensively rewritten editorially and it is not
+feasible to itemize the list of changes between {{RFC2001}} and
+{{RFC2581}}.  The intention of {{RFC2581}} was to not change any of the
+recommendations given in {{RFC2001}}, but to further clarify cases that
+were not discussed in detail in {{RFC2001}}.  Specifically, {{RFC2581}}
 suggested what TCP connections should do after a relatively long idle
 period, as well as specified and clarified some of the issues
 pertaining to TCP ACK generation.  Finally, the allowable upper bound
@@ -658,19 +691,19 @@ retransmission timer has fired is future work and explicitly
 unspecified in this document.
 
 The initial window requirements were changed to allow Larger Initial
-Windows as standardized in {{?RFC3390}}.  Additionally, the steps to
+Windows as standardized in {{RFC3390}}.  Additionally, the steps to
 take when an initial window is discovered to be too large due to Path
-MTU Discovery {{!RFC1191}} are detailed.
+MTU Discovery {{RFC1191}} are detailed.
 
 The recommended initial value for ssthresh has been changed to say
 that it SHOULD be arbitrarily high, where it was previously MAY.
 This is to provide additional guidance to implementors on the matter.
 
-During slow start, the usage of Appropriate Byte Counting {{?RFC3465}}
+During slow start, the usage of Appropriate Byte Counting {{RFC3465}}
 with L=1\*SMSS is explicitly recommended.  The method of increasing
-cwnd given in {{?RFC2581}} is still explicitly allowed.  Byte counting
+cwnd given in {{RFC2581}} is still explicitly allowed.  Byte counting
 during congestion avoidance is also recommended, while the method
-from {{?RFC2581}} and other safe methods are still allowed.
+from {{RFC2581}} and other safe methods are still allowed.
 
 The treatment of ssthresh on retransmission timeout was clarified.
 In particular, ssthresh must be set to half the FlightSize on the
@@ -678,7 +711,7 @@ first retransmission of a given segment and then is held constant on
 subsequent retransmissions of the same segment.
 
 The description of fast retransmit and fast recovery has been
-clarified, and the use of Limited Transmit {{?RFC3042}} is now
+clarified, and the use of Limited Transmit {{RFC3042}} is now
 recommended.
 
 TCPs now MAY limit the number of duplicate ACKs that artificially
@@ -687,7 +720,7 @@ outstanding to avoid the duplicate ACK spoofing attack described in
 {{SCWA99}}.
 
 The restart window has been changed to min(IW,cwnd) from IW.  This
-behavior was described as "experimental" in {{?RFC2581}}.
+behavior was described as "experimental" in {{RFC2581}}.
 
 It is now recommended that TCP implementors implement an advanced
 loss recovery algorithm conforming to the principles outlined in this
@@ -709,13 +742,13 @@ TODO: move section to appendix for -01
 -->
 
 The core algorithms we describe were developed by Van Jacobson
-{{Jac88}}{{Jac90}}.  In addition, Limited Transmit {{?RFC3042}} was
+{{Jac88}}{{Jac90}}.  In addition, Limited Transmit {{RFC3042}} was
 developed in conjunction with Hari Balakrishnan and Sally Floyd.  The
 initial congestion window size specified in this document is a result
-of work with Sally Floyd and Craig Partridge {{?RFC2414}}{{?RFC3390}}.
+of work with Sally Floyd and Craig Partridge {{RFC2414}}{{RFC3390}}.
 
 W. Richard ("Rich") Stevens wrote the first version of this document
-{{?RFC2001}} and co-authored the second version {{?RFC2581}}.  This present
+{{RFC2001}} and co-authored the second version {{RFC2581}}.  This present
 version much benefits from his clarity and thoughtfulness of
 description, and we are grateful for Rich's contributions in
 elucidating TCP congestion control, as well as in more broadly
