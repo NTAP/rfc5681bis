@@ -14,10 +14,10 @@ begin transmission after a relatively long idle period, as well as
 discussing various acknowledgment generation methods.  This document
 obsoletes RFC 5681. 
     " name="description">
-<meta content="xml2rfc 3.10.0" name="generator">
+<meta content="xml2rfc 3.11.1" name="generator">
 <meta content="draft-eggert-tcpm-rfc5681bis-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.10.0
+  xml2rfc 3.11.1
     Python 3.9.5
     appdirs 1.4.4
     ConfigArgParse 1.3
@@ -201,7 +201,8 @@ obsoletes RFC 5681.
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-html {
+:root {
+  color-scheme: light dark;
   --background-color: #fff;
   --text-color: #222;
   --title-color: #191919;
@@ -211,20 +212,8 @@ html {
   --pilcrow-weak: #ddd;
   --pilcrow-strong: #bbb;
   --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
   scrollbar-color: #bbb #eee;
-}
-@media (prefers-color-scheme: dark) {
-html {
-  --background-color: #121212;
-  --text-color: #f0f0f0;
-  --title-color: #fff;
-  --link-color: #4da4f0;
-  --highlight-color: #282828;
-  --line-color: #444;
-  --pilcrow-weak: #444;
-  --pilcrow-strong: #666;
-  scrollbar-color: #777 #333;
-}
 }
 body {
   max-width: 600px;
@@ -317,6 +306,10 @@ div {
 }
 svg {
   display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
 }
 .alignCenter.art-text {
   background-color: var(--highlight-color);
@@ -412,7 +405,7 @@ a.xref {
 /* Figures */
 tt, code, pre {
   background-color: var(--highlight-color);
-  font: 14px/22px 'Oxygen Mono', monospace;
+  font: 14px/22px var(--font-mono);
 }
 tt, code {
   /* changing the font for inline elements leads to different ascender
@@ -444,17 +437,22 @@ figcaption, caption {
   text-align: left;
 }
 @media screen {
-  pre {
+  pre, svg {
     display: inline-block;
     overflow-x: auto;
+  }
+  pre {
     max-width: 100%;
     width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
   }
   figure pre {
     display: block;
     width: calc(100% - 25px);
   }
-  pre + .pilcrow {
+  pre + .pilcrow, svg + .pilcrow {
     display: inline-block;
     vertical-align: text-bottom;
     padding-bottom: 8px;
@@ -468,9 +466,6 @@ aside, blockquote {
   font-style: italic;
 }
 blockquote {
-  background-color: var(--highlight-color);
-  border: 1px solid var(--line-color);
-  border-radius: 3px;
   margin: 1em 0;
 }
 cite {
@@ -1013,6 +1008,34 @@ address div.right {
   font-weight: bold;
   font-size: 0.9em;
 }
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+/* Trick: a prefix match works because only black and white are allowed */
+svg [stroke="black"], svg [stroke^="#000"] {
+  stroke: var(--text-color);
+}
+svg [stroke="white"], svg [stroke^="#fff"] {
+  stroke: var(--background-color);
+}
+svg [fill="black"], svg [fill^="#000"], svg :not([fill]) {
+  fill: var(--text-color);
+}
+svg [stroke="fill"], svg [fill^="#fff"] {
+  fill: var(--background-color);
+}
+}
 </style>
 
 </head>
@@ -1021,11 +1044,11 @@ address div.right {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">TCP Congestion Control</td>
-<td class="right">October 2021</td>
+<td class="right">November 2021</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Eggert</td>
-<td class="center">Expires 21 April 2022</td>
+<td class="center">Expires 5 May 2022</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1041,12 +1064,12 @@ address div.right {
 <a href="https://datatracker.ietf.org/doc/html/rfc5681" class="eref">5681</a> (if approved)</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2021-10-18" class="published">18 October 2021</time>
+<time datetime="2021-11-01" class="published">1 November 2021</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2022-04-21">21 April 2022</time></dd>
+<dd class="expires"><time datetime="2022-05-05">5 May 2022</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1097,7 +1120,7 @@ obsoletes RFC 5681.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 21 April 2022.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 5 May 2022.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1115,9 +1138,9 @@ obsoletes RFC 5681.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
             publication of this document. Please review these documents
             carefully, as they describe your rights and restrictions with
             respect to this document. Code Components extracted from this
-            document must include Simplified BSD License text as described in
+            document must include Revised BSD License text as described in
             Section 4.e of the Trust Legal Provisions and are provided without
-            warranty as described in the Simplified BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.2-3">
             This document may contain material from IETF Documents or IETF
             Contributions published or made publicly available before November
@@ -1232,9 +1255,9 @@ definitions that will be used throughout the document.  <a href="#algorithms" cl
 provides a specification of the congestion control algorithms.
 <a href="#considerations" class="xref">Section 4</a> outlines concerns related to the congestion control
 algorithms and finally, <a href="#security" class="xref">Section 5</a> outlines security considerations.<a href="#section-1-5" class="pilcrow">¶</a></p>
-<p id="section-1-6">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
-NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
-"MAY", and "OPTIONAL" in this document are to be interpreted as
+<p id="section-1-6">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL</span>
+NOT", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+"<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
 described in BCP 14 <span>[<a href="#RFC2119" class="xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="xref">RFC8174</a>]</span> when, and only when, they
 appear in all capitals, as shown here.<a href="#section-1-6" class="pilcrow">¶</a></p>
 </section>
@@ -1294,7 +1317,7 @@ RECEIVER WINDOW (rwnd):  </dt>
 CONGESTION WINDOW (cwnd):  </dt>
         <dd style="margin-left: 1.5em" id="section-2-2.12">
           <p id="section-2-2.12.1">A TCP state variable that limits the amount
-of data a TCP can send.  At any given time, a TCP MUST NOT send
+of data a TCP can send.  At any given time, a TCP <span class="bcp14">MUST NOT</span> send
 data with a sequence number higher than the sum of the highest
 acknowledged sequence number and the minimum of cwnd and rwnd.<a href="#section-2-2.12.1" class="pilcrow">¶</a></p>
 </dd>
@@ -1363,8 +1386,8 @@ contains previously unknown SACK information).<a href="#section-2-2.24.1" class=
 start, congestion avoidance, fast retransmit, and fast recovery,
 developed in <span>[<a href="#Jac88" class="xref">Jac88</a>]</span> and <span>[<a href="#Jac90" class="xref">Jac90</a>]</span>.  In some situations, it may be
 beneficial for a TCP sender to be more conservative than the
-algorithms allow; however, a TCP MUST NOT be more aggressive than the
-following algorithms allow (that is, MUST NOT send data when the
+algorithms allow; however, a TCP <span class="bcp14">MUST NOT</span> be more aggressive than the
+following algorithms allow (that is, <span class="bcp14">MUST NOT</span> send data when the
 value of cwnd computed by the following algorithms would not allow
 the data to be sent).<a href="#section-3-1" class="pilcrow">¶</a></p>
 <p id="section-3-2">Also, note that the algorithms specified in this document work in
@@ -1375,7 +1398,7 @@ Notification (ECN) could also be used as specified in <span>[<a href="#RFC3168" 
         <h3 id="name-slow-start-and-congestion-a">
 <a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-slow-start-and-congestion-a" class="section-name selfRef">Slow Start and Congestion Avoidance</a>
         </h3>
-<p id="section-3.1-1">The slow start and congestion avoidance algorithms MUST be used by a
+<p id="section-3.1-1">The slow start and congestion avoidance algorithms <span class="bcp14">MUST</span> be used by a
 TCP sender to control the amount of outstanding data being injected
 into the network.  To implement these algorithms, two variables are
 added to the TCP per-connection state.  The congestion window (cwnd)
@@ -1396,7 +1419,7 @@ repairing loss detected by the retransmission timer.  Slow start
 additionally serves to start the "ACK clock" used by the TCP sender
 to release data into the network in the slow start, congestion
 avoidance, and loss recovery algorithms.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
-<p id="section-3.1-4">IW, the initial value of cwnd, MUST be set using the following
+<p id="section-3.1-4">IW, the initial value of cwnd, <span class="bcp14">MUST</span> be set using the following
 guidelines as an upper bound.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-3.1-5">
 <pre>
@@ -1409,21 +1432,21 @@ if SMSS &lt;= 1095 bytes:
 </pre><a href="#section-3.1-5" class="pilcrow">¶</a>
 </div>
 <p id="section-3.1-6">As specified in <span>[<a href="#RFC3390" class="xref">RFC3390</a>]</span>, the SYN/ACK and the acknowledgment of the
-SYN/ACK MUST NOT increase the size of the congestion window.
+SYN/ACK <span class="bcp14">MUST NOT</span> increase the size of the congestion window.
 Further, if the SYN or SYN/ACK is lost, the initial window used by a
-sender after a correctly transmitted SYN MUST be one segment
+sender after a correctly transmitted SYN <span class="bcp14">MUST</span> be one segment
 consisting of at most SMSS bytes.<a href="#section-3.1-6" class="pilcrow">¶</a></p>
 <p id="section-3.1-7">A detailed rationale and discussion of the IW setting is provided in
 <span>[<a href="#RFC3390" class="xref">RFC3390</a>]</span>.<a href="#section-3.1-7" class="pilcrow">¶</a></p>
 <p id="section-3.1-8">When initial congestion windows of more than one segment are
 implemented along with Path MTU Discovery <span>[<a href="#RFC1191" class="xref">RFC1191</a>]</span>, and the MSS
 being used is found to be too large, the congestion window cwnd
-SHOULD be reduced to prevent large bursts of smaller segments.
-Specifically, cwnd SHOULD be reduced by the ratio of the old segment
+<span class="bcp14">SHOULD</span> be reduced to prevent large bursts of smaller segments.
+Specifically, cwnd <span class="bcp14">SHOULD</span> be reduced by the ratio of the old segment
 size to the new segment size.<a href="#section-3.1-8" class="pilcrow">¶</a></p>
-<p id="section-3.1-9">The initial value of ssthresh SHOULD be set arbitrarily high (e.g.,
+<p id="section-3.1-9">The initial value of ssthresh <span class="bcp14">SHOULD</span> be set arbitrarily high (e.g.,
 to the size of the largest possible advertised window), but ssthresh
-MUST be reduced in response to congestion.  Setting ssthresh as high
+<span class="bcp14">MUST</span> be reduced in response to congestion.  Setting ssthresh as high
 as possible allows the network conditions, rather than some arbitrary
 host limit, to dictate the sending rate.  In cases where the end
 systems have a solid understanding of the network path, more
@@ -1459,27 +1482,30 @@ sized segment per round-trip time (RTT).  Congestion avoidance
 continues until congestion is detected.  The basic guidelines for
 incrementing cwnd during congestion avoidance are:<a href="#section-3.1-14" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-3.1-15.1">MAY increment cwnd by SMSS bytes<a href="#section-3.1-15.1" class="pilcrow">¶</a>
+<li class="normal" id="section-3.1-15.1">
+            <span class="bcp14">MAY</span> increment cwnd by SMSS bytes<a href="#section-3.1-15.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-3.1-15.2">SHOULD increment cwnd per equation (2) once per RTT<a href="#section-3.1-15.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-3.1-15.2">
+            <span class="bcp14">SHOULD</span> increment cwnd per equation (2) once per RTT<a href="#section-3.1-15.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-3.1-15.3">MUST NOT increment cwnd by more than SMSS bytes<a href="#section-3.1-15.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-3.1-15.3">
+            <span class="bcp14">MUST NOT</span> increment cwnd by more than SMSS bytes<a href="#section-3.1-15.3" class="pilcrow">¶</a>
 </li>
         </ul>
 <p id="section-3.1-16">We note that <span>[<a href="#RFC3465" class="xref">RFC3465</a>]</span> allows for cwnd increases of more than SMSS
 bytes for incoming acknowledgments during slow start on an
 experimental basis; however, such behavior is not allowed as part of
 the standard.<a href="#section-3.1-16" class="pilcrow">¶</a></p>
-<p id="section-3.1-17">The RECOMMENDED way to increase cwnd during congestion avoidance is
+<p id="section-3.1-17">The <span class="bcp14">RECOMMENDED</span> way to increase cwnd during congestion avoidance is
 to count the number of bytes that have been acknowledged by ACKs for
 new data.  (A drawback of this implementation is that it requires
 maintaining an additional state variable.)  When the number of bytes
 acknowledged reaches cwnd, then cwnd can be incremented by up to SMSS
-bytes.  Note that during congestion avoidance, cwnd MUST NOT be
+bytes.  Note that during congestion avoidance, cwnd <span class="bcp14">MUST NOT</span> be
 increased by more than SMSS bytes per RTT.  This method both allows
 TCPs to increase cwnd by one segment per RTT in the face of delayed
 ACKs and provides robustness against ACK Division attacks.<a href="#section-3.1-17" class="pilcrow">¶</a></p>
-<p id="section-3.1-18">Another common formula that a TCP MAY use to update cwnd during
+<p id="section-3.1-18">Another common formula that a TCP <span class="bcp14">MAY</span> use to update cwnd during
 congestion avoidance is given in equation (3):<a href="#section-3.1-18" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-3.1-19">
 <pre>
@@ -1495,7 +1521,7 @@ acknowledging every-other packet, (3) is less aggressive than allowed
 <p id="section-3.1-21">Implementation Note: Since integer arithmetic is usually used in TCP
 implementations, the formula given in equation (3) can fail to
 increase cwnd when the congestion window is larger than SMSS*SMSS.
-If the above formula yields 0, the result SHOULD be rounded up to 1
+If the above formula yields 0, the result <span class="bcp14">SHOULD</span> be rounded up to 1
 byte.<a href="#section-3.1-21" class="pilcrow">¶</a></p>
 <p id="section-3.1-22">Implementation Note: Older implementations have an additional
 additive constant on the right-hand side of equation (3).  This is
@@ -1506,7 +1532,7 @@ find equation (3) difficult to use, and may prefer to use the
 counting approach discussed in the previous paragraph.<a href="#section-3.1-23" class="pilcrow">¶</a></p>
 <p id="section-3.1-24">When a TCP sender detects segment loss using the retransmission timer
 and the given segment has not yet been resent by way of the
-retransmission timer, the value of ssthresh MUST be set to no more
+retransmission timer, the value of ssthresh <span class="bcp14">MUST</span> be set to no more
 than the value given in equation (4):<a href="#section-3.1-24" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-3.1-25">
 <pre>
@@ -1522,7 +1548,7 @@ value of ssthresh is held constant.<a href="#section-3.1-27" class="pilcrow">¶<
 <p id="section-3.1-28">Implementation Note: An easy mistake to make is to simply use cwnd,
 rather than FlightSize, which in some implementations may
 incidentally increase well beyond rwnd.<a href="#section-3.1-28" class="pilcrow">¶</a></p>
-<p id="section-3.1-29">Furthermore, upon a timeout (as specified in <span>[<a href="#RFC2988" class="xref">RFC2988</a>]</span>) cwnd MUST be
+<p id="section-3.1-29">Furthermore, upon a timeout (as specified in <span>[<a href="#RFC2988" class="xref">RFC2988</a>]</span>) cwnd <span class="bcp14">MUST</span> be
 set to no more than the loss window, LW, which equals 1 full-sized
 segment (regardless of the value of IW).  Therefore, after
 retransmitting the dropped segment the TCP sender uses the slow start
@@ -1543,7 +1569,7 @@ experimentation and specification.<a href="#section-3.1-30" class="pilcrow">¶</
         <h3 id="name-fast-retransmit-fast-recove">
 <a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-fast-retransmit-fast-recove" class="section-name selfRef">Fast Retransmit/Fast Recovery</a>
         </h3>
-<p id="section-3.2-1">A TCP receiver SHOULD send an immediate duplicate ACK when an out-
+<p id="section-3.2-1">A TCP receiver <span class="bcp14">SHOULD</span> send an immediate duplicate ACK when an out-
 of-order segment arrives.  The purpose of this ACK is to inform the
 sender that a segment was received out-of-order and which sequence
 number is expected.  From the sender's perspective, duplicate ACKs
@@ -1554,12 +1580,12 @@ repaired.  Second, duplicate ACKs can be caused by the re-ordering of
 data segments by the network (not a rare event along some network
 paths <span>[<a href="#Pax97" class="xref">Pax97</a>]</span>).  Finally, duplicate ACKs can be caused by replication
 of ACK or data segments by the network.  In addition, a TCP receiver
-SHOULD send an immediate ACK when the incoming segment fills in all
+<span class="bcp14">SHOULD</span> send an immediate ACK when the incoming segment fills in all
 or part of a gap in the sequence space.  This will generate more
 timely information for a sender recovering from a loss through a
 retransmission timeout, a fast retransmit, or an advanced loss
 recovery algorithm, as outlined in <a href="#loss-rec-mechanisms" class="xref">Section 4.3</a>.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
-<p id="section-3.2-2">The TCP sender SHOULD use the "fast retransmit" algorithm to detect
+<p id="section-3.2-2">The TCP sender <span class="bcp14">SHOULD</span> use the "fast retransmit" algorithm to detect
 and repair loss, based on incoming duplicate ACKs.  The fast
 retransmit algorithm uses the arrival of 3 duplicate ACKs (as defined
 in <a href="#definitions" class="xref">Section 2</a>, without any intervening ACKs which move SND.UNA) as an
@@ -1584,35 +1610,35 @@ since loss is an indication of congestion).<a href="#section-3.2-3" class="pilcr
 together as follows.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.2-5">
 <li id="section-3.2-5.1">On the first and second duplicate ACKs received at a sender, a
-TCP SHOULD send a segment of previously unsent data per <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>
+TCP <span class="bcp14">SHOULD</span> send a segment of previously unsent data per <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>
 provided that the receiver's advertised window allows, the total
 FlightSize would remain less than or equal to cwnd plus 2*SMSS,
 and that new data is available for transmission.  Further, the
-TCP sender MUST NOT change cwnd to reflect these two segments
-<span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>.  Note that a sender using SACK <span>[<a href="#RFC2018" class="xref">RFC2018</a>]</span> MUST NOT send
+TCP sender <span class="bcp14">MUST NOT</span> change cwnd to reflect these two segments
+<span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>.  Note that a sender using SACK <span>[<a href="#RFC2018" class="xref">RFC2018</a>]</span> <span class="bcp14">MUST NOT</span> send
 new data unless the incoming duplicate acknowledgment contains
 new SACK information.<a href="#section-3.2-5.1" class="pilcrow">¶</a>
 </li>
-          <li id="section-3.2-5.2">When the third duplicate ACK is received, a TCP MUST set ssthresh
+          <li id="section-3.2-5.2">When the third duplicate ACK is received, a TCP <span class="bcp14">MUST</span> set ssthresh
 to no more than the value given in equation (4).  When <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span>
-is in use, additional data sent in limited transmit MUST NOT be
+is in use, additional data sent in limited transmit <span class="bcp14">MUST NOT</span> be
 included in this calculation.<a href="#section-3.2-5.2" class="pilcrow">¶</a>
 </li>
-          <li id="section-3.2-5.3">The lost segment starting at SND.UNA MUST be retransmitted and
+          <li id="section-3.2-5.3">The lost segment starting at SND.UNA <span class="bcp14">MUST</span> be retransmitted and
 cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
 the congestion window by the number of segments (three) that have
 left the network and which the receiver has buffered.<a href="#section-3.2-5.3" class="pilcrow">¶</a>
 </li>
           <li id="section-3.2-5.4">
             <p id="section-3.2-5.4.1">For each additional duplicate ACK received (after the third),
-cwnd MUST be incremented by SMSS.  This artificially inflates the
+cwnd <span class="bcp14">MUST</span> be incremented by SMSS.  This artificially inflates the
 congestion window in order to reflect the additional segment that
 has left the network.<a href="#section-3.2-5.4.1" class="pilcrow">¶</a></p>
 <p id="section-3.2-5.4.2">
 Note: <span>[<a href="#SCWA99" class="xref">SCWA99</a>]</span> discusses a receiver-based attack whereby many
 bogus duplicate ACKs are sent to the data sender in order to
 artificially inflate cwnd and cause a higher than appropriate
-sending rate to be used.  A TCP MAY therefore limit the number of
+sending rate to be used.  A TCP <span class="bcp14">MAY</span> therefore limit the number of
 times cwnd is artificially inflated during loss recovery to the
 number of outstanding segments (or, an approximation thereof).<a href="#section-3.2-5.4.2" class="pilcrow">¶</a></p>
 <p id="section-3.2-5.4.3">
@@ -1623,12 +1649,12 @@ of the segments between SND.UNA and SND.NXT are assumed to have
 left the network but are still reflected in FlightSize.<a href="#section-3.2-5.4.3" class="pilcrow">¶</a></p>
 </li>
           <li id="section-3.2-5.5">When previously unsent data is available and the new value of
-cwnd and the receiver's advertised window allow, a TCP SHOULD
+cwnd and the receiver's advertised window allow, a TCP <span class="bcp14">SHOULD</span>
 send 1*SMSS bytes of previously unsent data.<a href="#section-3.2-5.5" class="pilcrow">¶</a>
 </li>
           <li id="section-3.2-5.6">
             <p id="section-3.2-5.6.1">When the next ACK arrives that acknowledges previously
-unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
+unacknowledged data, a TCP <span class="bcp14">MUST</span> set cwnd to ssthresh (the value
 set in step 2).  This is termed "deflating" the window.<a href="#section-3.2-5.6.1" class="pilcrow">¶</a></p>
 <p id="section-3.2-5.6.2">
 This ACK should be the acknowledgment elicited by the
@@ -1683,7 +1709,7 @@ receives a request before transmitting data to the Web client.  The
 reception of the request makes the test for an idle connection fail,
 and allows the TCP to begin transmission with a possibly
 inappropriately large cwnd.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
-<p id="section-4.1-5">Therefore, a TCP SHOULD set cwnd to no more than RW before beginning
+<p id="section-4.1-5">Therefore, a TCP <span class="bcp14">SHOULD</span> set cwnd to no more than RW before beginning
 transmission if the TCP has not sent data in an interval exceeding
 the retransmission timeout.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
 </section>
@@ -1693,16 +1719,16 @@ the retransmission timeout.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
         <h3 id="name-generating-acknowledgments">
 <a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-generating-acknowledgments" class="section-name selfRef">Generating Acknowledgments</a>
         </h3>
-<p id="section-4.2-1">The delayed ACK algorithm specified in <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span> SHOULD be used by a
-TCP receiver.  When using delayed ACKs, a TCP receiver MUST NOT
-excessively delay acknowledgments.  Specifically, an ACK SHOULD be
-generated for at least every second full-sized segment, and MUST be
+<p id="section-4.2-1">The delayed ACK algorithm specified in <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span> <span class="bcp14">SHOULD</span> be used by a
+TCP receiver.  When using delayed ACKs, a TCP receiver <span class="bcp14">MUST NOT</span>
+excessively delay acknowledgments.  Specifically, an ACK <span class="bcp14">SHOULD</span> be
+generated for at least every second full-sized segment, and <span class="bcp14">MUST</span> be
 generated within 500 ms of the arrival of the first unacknowledged
 packet.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
-<p id="section-4.2-2">The requirement that an ACK "SHOULD" be generated for at least every
+<p id="section-4.2-2">The requirement that an ACK "<span class="bcp14">SHOULD</span>" be generated for at least every
 second full-sized segment is listed in <span>[<a href="#RFC1122" class="xref">RFC1122</a>]</span> in one place as a
-SHOULD and another as a MUST.  Here we unambiguously state it is a
-SHOULD.  We also emphasize that this is a SHOULD, meaning that an
+<span class="bcp14">SHOULD</span> and another as a <span class="bcp14">MUST</span>.  Here we unambiguously state it is a
+<span class="bcp14">SHOULD</span>.  We also emphasize that this is a <span class="bcp14">SHOULD</span>, meaning that an
 implementor should indeed only deviate from this requirement after
 careful consideration of the implications.  See the discussion of
 "Stretch ACK violation" in <span>[<a href="#RFC2525" class="xref">RFC2525</a>]</span> and the references therein for a
@@ -1726,16 +1752,16 @@ sent.  Clearly this will take more than 2 segments of size Y bytes.
 Therefore, while a specific algorithm is not defined, it is desirable
 for receivers to attempt to prevent this situation, for example, by
 acknowledging at least every second segment, regardless of size.
-Finally, we repeat that an ACK MUST NOT be delayed for more than 500
+Finally, we repeat that an ACK <span class="bcp14">MUST NOT</span> be delayed for more than 500
 ms waiting on a second full-sized segment to arrive.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
-<p id="section-4.2-4">Out-of-order data segments SHOULD be acknowledged immediately, in
+<p id="section-4.2-4">Out-of-order data segments <span class="bcp14">SHOULD</span> be acknowledged immediately, in
 order to accelerate loss recovery.  To trigger the fast retransmit
-algorithm, the receiver SHOULD send an immediate duplicate ACK when
+algorithm, the receiver <span class="bcp14">SHOULD</span> send an immediate duplicate ACK when
 it receives a data segment above a gap in the sequence space.  To
 provide feedback to senders recovering from losses, the receiver
-SHOULD send an immediate ACK when it receives a data segment that
+<span class="bcp14">SHOULD</span> send an immediate ACK when it receives a data segment that
 fills in all or part of a gap in the sequence space.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
-<p id="section-4.2-5">A TCP receiver MUST NOT generate more than one ACK for every incoming
+<p id="section-4.2-5">A TCP receiver <span class="bcp14">MUST NOT</span> generate more than one ACK for every incoming
 segment, other than to update the offered window as the receiving
 application consumes new data (see <span>[<a href="#RFC813" class="xref">RFC813</a>]</span> and page 42 of <span>[<a href="#RFC793" class="xref">RFC793</a>]</span>).<a href="#section-4.2-5" class="pilcrow">¶</a></p>
 </section>
@@ -1759,16 +1785,16 @@ these enhanced algorithms are implicitly allowed, as long as they
 follow the general principles of the basic four algorithms outlined
 above.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
 <p id="section-4.3-2">That is, when the first loss in a window of data is detected,
-ssthresh MUST be set to no more than the value given by equation (4).
+ssthresh <span class="bcp14">MUST</span> be set to no more than the value given by equation (4).
 Second, until all lost segments in the window of data in question are
-repaired, the number of segments transmitted in each RTT MUST be no
+repaired, the number of segments transmitted in each RTT <span class="bcp14">MUST</span> be no
 more than half the number of outstanding segments when the loss was
 detected.  Finally, after all loss in the given window of segments
-has been successfully retransmitted, cwnd MUST be set to no more than
-ssthresh and congestion avoidance MUST be used to further increase
+has been successfully retransmitted, cwnd <span class="bcp14">MUST</span> be set to no more than
+ssthresh and congestion avoidance <span class="bcp14">MUST</span> be used to further increase
 cwnd.  Loss in two successive windows of data, or the loss of a
 retransmission, should be taken as two indications of congestion and,
-therefore, cwnd (and ssthresh) MUST be lowered twice in this case.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+therefore, cwnd (and ssthresh) <span class="bcp14">MUST</span> be lowered twice in this case.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
 <p id="section-4.3-3">We RECOMMEND that TCP implementors employ some form of advanced loss
 recovery that can cope with multiple losses in a window of data.  The
 algorithms detailed in <span>[<a href="#RFC3782" class="xref">RFC3782</a>]</span> and <span>[<a href="#RFC3517" class="xref">RFC3517</a>]</span> conform to the general
@@ -1837,7 +1863,7 @@ Windows as standardized in <span>[<a href="#RFC3390" class="xref">RFC3390</a>]</
 take when an initial window is discovered to be too large due to Path
 MTU Discovery <span>[<a href="#RFC1191" class="xref">RFC1191</a>]</span> are detailed.<a href="#section-7-3" class="pilcrow">¶</a></p>
 <p id="section-7-4">The recommended initial value for ssthresh has been changed to say
-that it SHOULD be arbitrarily high, where it was previously MAY.
+that it <span class="bcp14">SHOULD</span> be arbitrarily high, where it was previously <span class="bcp14">MAY</span>.
 This is to provide additional guidance to implementors on the matter.<a href="#section-7-4" class="pilcrow">¶</a></p>
 <p id="section-7-5">During slow start, the usage of Appropriate Byte Counting <span>[<a href="#RFC3465" class="xref">RFC3465</a>]</span>
 with L=1*SMSS is explicitly recommended.  The method of increasing
@@ -1851,7 +1877,7 @@ subsequent retransmissions of the same segment.<a href="#section-7-6" class="pil
 <p id="section-7-7">The description of fast retransmit and fast recovery has been
 clarified, and the use of Limited Transmit <span>[<a href="#RFC3042" class="xref">RFC3042</a>]</span> is now
 recommended.<a href="#section-7-7" class="pilcrow">¶</a></p>
-<p id="section-7-8">TCPs now MAY limit the number of duplicate ACKs that artificially
+<p id="section-7-8">TCPs now <span class="bcp14">MAY</span> limit the number of duplicate ACKs that artificially
 inflate cwnd during loss recovery to the number of segments
 outstanding to avoid the duplicate ACK spoofing attack described in
 <span>[<a href="#SCWA99" class="xref">SCWA99</a>]</span>.<a href="#section-7-8" class="pilcrow">¶</a></p>
