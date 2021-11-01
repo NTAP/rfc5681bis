@@ -105,7 +105,7 @@ provides a specification of the congestion control algorithms.
 {{considerations}} outlines concerns related to the congestion control
 algorithms and finally, {{security}} outlines security considerations.
 
-{::boilerplate bcp14}
+{::boilerplate bcp14-tagged}
 
 # Definitions {#definitions}
 
